@@ -84,68 +84,57 @@
   </div>
 
   <div class="step">
-    <h3>Step 2: Extract cookies from LinkedIn</h3>
-    <p>Click the button below to extract cookies from LinkedIn.com</p>
-    <button id="extractBtn" onclick="extractCookies()">Extract LinkedIn Cookies</button>
+    <h3>Step 2: Copy LinkedIn cookies manually</h3>
+    <p><strong>Instructions:</strong></p>
+    <ol>
+      <li>Open <a href="https://www.linkedin.com" target="_blank">LinkedIn.com</a> (make sure you're logged in)</li>
+      <li>Press <code>F12</code> or <code>Cmd+Option+I</code> to open DevTools</li>
+      <li>Go to <strong>Application</strong> tab (or <strong>Storage</strong> in Firefox)</li>
+      <li>Click <strong>Cookies</strong> → <strong>https://www.linkedin.com</strong></li>
+      <li>Right-click on any cookie and select <strong>"Show All Columns"</strong></li>
+      <li>Use the helper below to build the JSON</li>
+    </ol>
+
+    <p><strong>Copy these important cookies:</strong></p>
+    <textarea id="manualCookies" placeholder='Paste cookies in this format:
+[
+  {
+    "name": "li_at",
+    "value": "your-value-here",
+    "domain": ".linkedin.com",
+    "path": "/",
+    "expires": 1234567890,
+    "httpOnly": true,
+    "secure": true,
+    "sameSite": "None"
+  },
+  {
+    "name": "JSESSIONID",
+    "value": "your-value-here",
+    "domain": ".linkedin.com",
+    "path": "/",
+    "expires": 1234567890,
+    "httpOnly": false,
+    "secure": true,
+    "sameSite": "None"
+  }
+]
+
+At minimum, copy the "li_at" cookie - that is the main authentication cookie!' style="width: 100%; height: 300px; font-family: monospace; font-size: 12px;"></textarea>
+    <br>
+    <button onclick="useManualCookies()">Load These Cookies</button>
     <div id="cookieResult"></div>
   </div>
 
   <div class="step">
     <h3>Step 3: Upload cookies to server</h3>
-    <p>After extracting cookies, upload them to enable scraping:</p>
+    <p>After loading cookies above, upload them to enable scraping:</p>
     <button id="uploadBtn" onclick="uploadCookies()" disabled>Upload to Server</button>
     <div id="uploadResult"></div>
   </div>
 
   <script>
     let extractedCookies = null;
-
-    async function extractCookies() {
-      const resultDiv = document.getElementById('cookieResult');
-      const uploadBtn = document.getElementById('uploadBtn');
-
-      try {
-        // Request cookies from linkedin.com domain
-        const allCookies = await chrome.cookies?.getAll({ domain: '.linkedin.com' });
-
-        if (!allCookies || allCookies.length === 0) {
-          throw new Error('No LinkedIn cookies found. Make sure you are logged into LinkedIn.');
-        }
-
-        // Convert Chrome cookie format to Puppeteer format
-        extractedCookies = allCookies.map(cookie => ({
-          name: cookie.name,
-          value: cookie.value,
-          domain: cookie.domain,
-          path: cookie.path,
-          expires: cookie.expirationDate || -1,
-          httpOnly: cookie.httpOnly || false,
-          secure: cookie.secure || false,
-          sameSite: cookie.sameSite || 'Lax'
-        }));
-
-        resultDiv.innerHTML = `
-          <div class="success">
-            ✅ Successfully extracted ${extractedCookies.length} LinkedIn cookies!
-          </div>
-          <div class="cookie-display">
-            ${JSON.stringify(extractedCookies, null, 2)}
-          </div>
-        `;
-
-        uploadBtn.disabled = false;
-      } catch (error) {
-        resultDiv.innerHTML = `
-          <div class="error">
-            ❌ Error: ${error.message}
-            <br><br>
-            <strong>Note:</strong> This page needs to be served as a browser extension or you need to manually copy cookies.
-            <br><br>
-            <strong>Alternative:</strong> Open DevTools (F12) → Application → Cookies → linkedin.com → Copy manually
-          </div>
-        `;
-      }
-    }
 
     async function uploadCookies() {
       if (!extractedCookies) {
@@ -166,8 +155,10 @@
           throw new Error('Not authenticated. Please log in first.');
         }
 
-        // Get API URL from environment or use default
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4001';
+        // Get API URL - try to detect from current location or use default
+        const apiUrl = window.location.hostname.includes('localhost')
+          ? 'http://localhost:4001'
+          : window.location.origin.replace('sales-tracker', 'sales-tracker-api');
 
         const response = await fetch(`${apiUrl}/api/linkedin-auth/upload-cookies`, {
           method: 'POST',
@@ -202,33 +193,16 @@
       }
     }
 
-    // Manual cookie paste option
-    function showManualOption() {
-      const manualDiv = document.createElement('div');
-      manualDiv.className = 'step';
-      manualDiv.innerHTML = `
-        <h3>Alternative: Manual Cookie Paste</h3>
-        <p>If automatic extraction doesn't work, paste your cookies as JSON:</p>
-        <textarea id="manualCookies" style="width: 100%; height: 150px; font-family: monospace;"></textarea>
-        <button onclick="useManualCookies()">Use These Cookies</button>
-      `;
-      document.body.appendChild(manualDiv);
-    }
-
     function useManualCookies() {
+      const resultDiv = document.getElementById('cookieResult');
       try {
         const text = document.getElementById('manualCookies').value;
         extractedCookies = JSON.parse(text);
         document.getElementById('uploadBtn').disabled = false;
-        alert('Cookies loaded! Click "Upload to Server"');
+        resultDiv.innerHTML = '<div class="success">✅ Cookies loaded! Click "Upload to Server" below.</div>';
       } catch (error) {
-        alert('Invalid JSON: ' + error.message);
+        resultDiv.innerHTML = `<div class="error">❌ Invalid JSON: ${error.message}</div>`;
       }
-    }
-
-    // Check if we're in a supported environment
-    if (!window.chrome?.cookies) {
-      setTimeout(showManualOption, 1000);
     }
   </script>
 </body>
