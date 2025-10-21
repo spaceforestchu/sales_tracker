@@ -153,7 +153,7 @@
         // Get API URL
         const apiUrl = window.location.hostname.includes('localhost')
           ? 'http://localhost:4001'
-          : window.location.origin.replace('sales-tracker', 'sales-tracker-api');
+          : 'https://sales-tracker-api-wgt1.onrender.com';
 
         const response = await fetch(`${apiUrl}/api/linkedin-auth/upload-cookies`, {
           method: 'POST',
@@ -217,7 +217,7 @@
         // Get API URL - try to detect from current location or use default
         const apiUrl = window.location.hostname.includes('localhost')
           ? 'http://localhost:4001'
-          : window.location.origin.replace('sales-tracker', 'sales-tracker-api');
+          : 'https://sales-tracker-api-wgt1.onrender.com';
 
         const response = await fetch(`${apiUrl}/api/linkedin-auth/upload-cookies`, {
           method: 'POST',
