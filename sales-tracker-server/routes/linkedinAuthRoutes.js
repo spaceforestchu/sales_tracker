@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { interactiveLogin, hasSavedCookies, clearCookies } = require('../services/linkedinAuth');
 const auth = require('../middleware/auth');
-const { adminAuth } = require('../middleware/auth');
+const adminAuth = auth.adminAuth;
 
 /**
  * POST /api/linkedin-auth/login
