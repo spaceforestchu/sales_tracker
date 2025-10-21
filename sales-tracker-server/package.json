@@ -7,8 +7,6 @@
     "start": "node app.js",
     "dev": "nodemon app.js",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "bash install-chrome.sh",
-    "postinstall": "npx puppeteer browsers install chrome || echo 'Puppeteer install completed or skipped'",
     "db:create": "psql -U ${PG_USER:-postgres} -c 'CREATE DATABASE ${PG_DATABASE:-sales_tracker};' || echo 'Database may already exist'",
     "db:setup": "psql -U ${PG_USER:-postgres} -d ${PG_DATABASE:-sales_tracker} -f db/schema.sql",
     "db:seed": "psql -U ${PG_USER:-postgres} -d ${PG_DATABASE:-sales_tracker} -f db/seed.sql",
