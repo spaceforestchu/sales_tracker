@@ -20,7 +20,7 @@ const Login = () => {
     const result = await login({ email, password });
 
     if (result.success) {
-      navigate('/overview');
+      navigate('/leads');
     } else {
       setError(result.error);
       setLoading(false);
