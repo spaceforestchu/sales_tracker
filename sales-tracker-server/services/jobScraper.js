@@ -1,4 +1,5 @@
 const puppeteer = require('puppeteer');
+const path = require('path');
 
 // Scrape job details from various job posting websites using Puppeteer
 const scrapeJobPosting = async (url) => {
@@ -8,9 +9,14 @@ const scrapeJobPosting = async (url) => {
     // Detect which site the URL is from
     const site = detectJobSite(url);
 
+    // Get the executable path - use local cache if available
+    const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH ||
+      path.join(__dirname, '../.cache/puppeteer/chrome/linux-141.0.7390.78/chrome-linux64/chrome');
+
     // Launch browser with optimized settings
     browser = await puppeteer.launch({
       headless: true,
+      executablePath: executablePath,
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
