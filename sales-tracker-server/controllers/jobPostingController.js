@@ -40,7 +40,10 @@ const createJobPosting = async (req, res) => {
       source,
       ownership,
       aligned_sector,
-      notes
+      notes,
+      salary_range,
+      salary_min,
+      salary_max
     } = req.body;
 
     if (!job_title || !company_name) {
@@ -56,6 +59,9 @@ const createJobPosting = async (req, res) => {
       ownership,
       aligned_sector,
       notes,
+      salary_range,
+      salary_min,
+      salary_max,
       staff_user_id: req.user.id // From auth middleware
     };
 

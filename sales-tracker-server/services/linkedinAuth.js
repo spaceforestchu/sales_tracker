@@ -1,6 +1,7 @@
 const puppeteer = require('puppeteer');
 const path = require('path');
 const fs = require('fs').promises;
+const { getPuppeteerConfig } = require('../utils/puppeteerConfig');
 
 const COOKIES_PATH = path.join(__dirname, '../.cache/linkedin-cookies.json');
 
@@ -14,20 +15,11 @@ const interactiveLogin = async () => {
   try {
     console.log('🌐 Launching browser for interactive LinkedIn login...');
 
-    // Get the executable path
-    const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH ||
-      path.join(__dirname, '../.cache/puppeteer/chrome/linux-141.0.7390.78/chrome-linux64/chrome');
+    // Get platform-aware browser configuration (NON-headless for interactive login)
+    const browserConfig = getPuppeteerConfig(false);
 
     // Launch in NON-headless mode so you can see and interact
-    browser = await puppeteer.launch({
-      headless: false, // Visible browser!
-      executablePath: executablePath,
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--window-size=1920,1080'
-      ]
-    });
+    browser = await puppeteer.launch(browserConfig);
 
     const page = await browser.newPage();
     await page.setViewport({ width: 1920, height: 1080 });

@@ -25,7 +25,10 @@ const createJobPosting = async (jobPostingData) => {
     ownership,
     aligned_sector,
     notes,
-    staff_user_id
+    staff_user_id,
+    salary_range,
+    salary_min,
+    salary_max
   } = jobPostingData;
 
   const query = `
@@ -39,8 +42,11 @@ const createJobPosting = async (jobPostingData) => {
       aligned_sector,
       notes,
       staff_user_id,
+      salary_range,
+      salary_min,
+      salary_max,
       status
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'active')
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'active')
     RETURNING *
   `;
 
@@ -53,7 +59,10 @@ const createJobPosting = async (jobPostingData) => {
     ownership || null,
     aligned_sector ? JSON.stringify(aligned_sector) : null,
     notes || null,
-    staff_user_id
+    staff_user_id,
+    salary_range || null,
+    salary_min || null,
+    salary_max || null
   ];
 
   const result = await pool.query(query, values);
@@ -78,7 +87,9 @@ const updateJobPosting = async (id, updateData) => {
     'status',
     'is_shared',
     'shared_date',
-    'salary_range'
+    'salary_range',
+    'salary_min',
+    'salary_max'
   ];
 
   console.log('Update data received:', updateData);

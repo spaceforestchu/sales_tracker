@@ -1,6 +1,8 @@
 const puppeteer = require('puppeteer');
 const path = require('path');
 const { loadCookies, applyCookies } = require('./linkedinAuth');
+const { getPuppeteerConfig } = require('../utils/puppeteerConfig');
+const { parseSalary } = require('../utils/salaryParser');
 
 // Scrape job details from various job posting websites using Puppeteer
 const scrapeJobPosting = async (url) => {
@@ -10,40 +12,47 @@ const scrapeJobPosting = async (url) => {
     // Detect which site the URL is from
     const site = detectJobSite(url);
 
-    // Get the executable path - use local cache if available
-    const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH ||
-      path.join(__dirname, '../.cache/puppeteer/chrome/linux-141.0.7390.78/chrome-linux64/chrome');
+    // Get platform-aware browser configuration
+    const browserConfig = getPuppeteerConfig(true);
 
-    // Launch browser with memory-optimized settings
-    browser = await puppeteer.launch({
-      headless: true,
-      executablePath: executablePath,
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-accelerated-2d-canvas',
-        '--disable-gpu',
-        '--disable-software-rasterizer',
-        '--disable-extensions',
-        '--disable-background-networking',
-        '--disable-sync',
-        '--disable-translate',
-        '--hide-scrollbars',
-        '--metrics-recording-only',
-        '--mute-audio',
-        '--no-first-run',
-        '--safebrowsing-disable-auto-update',
-        '--single-process', // Run in single process to save memory
-        '--window-size=1024x768' // Smaller window
-      ]
-    });
+    // Launch browser with platform-specific settings
+    browser = await puppeteer.launch(browserConfig);
 
     const page = await browser.newPage();
 
     // Set viewport and user agent
     await page.setViewport({ width: 1920, height: 1080 });
-    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+    await page.setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+
+    // Stealth measures to avoid detection
+    await page.evaluateOnNewDocument(() => {
+      // Remove webdriver property
+      Object.defineProperty(navigator, 'webdriver', {
+        get: () => false,
+      });
+
+      // Mock plugins and languages to look more real
+      Object.defineProperty(navigator, 'plugins', {
+        get: () => [1, 2, 3, 4, 5],
+      });
+
+      Object.defineProperty(navigator, 'languages', {
+        get: () => ['en-US', 'en'],
+      });
+
+      // Override the chrome property
+      window.chrome = {
+        runtime: {},
+      };
+
+      // Mock permissions
+      const originalQuery = window.navigator.permissions.query;
+      window.navigator.permissions.query = (parameters) => (
+        parameters.name === 'notifications' ?
+          Promise.resolve({ state: Notification.permission }) :
+          originalQuery(parameters)
+      );
+    });
 
     // If LinkedIn, try to use saved cookies instead of logging in
     if (site === 'linkedin') {
@@ -62,8 +71,24 @@ const scrapeJobPosting = async (url) => {
       timeout: 30000
     });
 
-    // Wait a bit for dynamic content to load using setTimeout wrapped in Promise
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    // Add random human-like delay (2-4 seconds) to avoid detection
+    const randomDelay = 2000 + Math.random() * 2000;
+    await new Promise(resolve => setTimeout(resolve, randomDelay));
+
+    // Check if we're on a login page (for LinkedIn)
+    if (site === 'linkedin') {
+      const currentUrl = page.url();
+      const isLoginPage = await page.evaluate(() => {
+        return window.location.href.includes('/login') ||
+               window.location.href.includes('/uas/login') ||
+               document.querySelector('input[name="session_key"]') !== null || // Login form
+               document.title.toLowerCase().includes('sign in');
+      });
+
+      if (isLoginPage || currentUrl.includes('/login')) {
+        throw new Error('LinkedIn authentication expired or invalid. Please re-upload your LinkedIn cookies.');
+      }
+    }
 
     // Scrape based on site
     let jobData = {};
@@ -244,11 +269,25 @@ const scrapeGreenhouse = async (page) => {
   jobData.experience_level = extractExperienceLevel(bodyText);
   jobData.aligned_sector = extractSector(bodyText);
 
+  // Parse salary to extract min/max values
+  if (jobData.salary_range) {
+    const parsedSalary = parseSalary(jobData.salary_range);
+    jobData.salary_range = parsedSalary.salary_range;
+    jobData.salary_min = parsedSalary.salary_min;
+    jobData.salary_max = parsedSalary.salary_max;
+  }
+
   return jobData;
 };
 
 // Scrape LinkedIn job postings
 const scrapeLinkedIn = async (page) => {
+  // Log current URL and page title for debugging
+  const currentUrl = page.url();
+  const pageTitle = await page.title();
+  console.log('📍 Current URL:', currentUrl);
+  console.log('📄 Page title:', pageTitle);
+
   const jobData = await page.evaluate(() => {
     const data = {};
 
@@ -269,18 +308,37 @@ const scrapeLinkedIn = async (page) => {
                           document.querySelector('.top-card-layout__card a');
     data.company_name = companyElement ? companyElement.textContent.trim() : '';
 
-    // Salary - look for salary information
-    const salaryElement = document.querySelector('[class*="salary"]') ||
-                         document.querySelector('.job-details-jobs-unified-top-card__job-insight');
+    // Salary - look for salary information in multiple places
+    // First try the salary button (most reliable)
+    let salaryElement = document.querySelector('button .tvm__text strong') ||
+                       document.querySelector('.tvm__text strong') ||
+                       document.querySelector('[class*="salary"]') ||
+                       document.querySelector('.job-details-jobs-unified-top-card__job-insight');
+
     data.salary_range = salaryElement ? salaryElement.textContent.trim() : null;
 
-    // Clean up salary if found
+    // Clean up salary if found - only keep if it has a dollar sign
     if (data.salary_range && !data.salary_range.includes('$')) {
       data.salary_range = null;
     }
 
+    // Additional cleanup: remove extra whitespace and normalize separators
+    if (data.salary_range) {
+      data.salary_range = data.salary_range.replace(/\s+/g, ' ').trim();
+    }
+
     return data;
   });
+
+  console.log('📋 Scraped job title:', jobData.job_title);
+  console.log('🏢 Scraped company:', jobData.company_name);
+
+  // Early detection: If job title contains login-related keywords, something's wrong
+  if (jobData.job_title && (jobData.job_title.toLowerCase().includes('sign in') ||
+      jobData.job_title.toLowerCase().includes('login'))) {
+    console.error('⚠️  Detected login page - job title is:', jobData.job_title);
+    throw new Error('LinkedIn authentication expired or invalid. The page shows a login prompt instead of the job posting.');
+  }
 
   // Analyze description for experience level and sector
   const description = await page.evaluate(() => {
@@ -293,6 +351,42 @@ const scrapeLinkedIn = async (page) => {
 
   jobData.experience_level = extractExperienceLevel(jobData.job_title + ' ' + description);
   jobData.aligned_sector = extractSector(jobData.job_title + ' ' + description);
+
+  // If no salary found in top card, search description text
+  if (!jobData.salary_range || !jobData.salary_range.includes('$')) {
+    console.log('No salary in top card, searching description...');
+
+    // Look for salary patterns in description
+    // Patterns: "$173,000 - $197,400", "$120k-$180k", "$85.10/hour to $251,000/year"
+    const salaryPatterns = [
+      /\$[\d,]+\.?\d*\s*[-–—to]+\s*\$[\d,]+\.?\d*\s*(?:\/\s*)?(?:hour|hr|year|yr|annual|annually)?/gi,
+      /\$[\d,]+\.?\d*\s*[kK]?\s*[-–—to]+\s*\$?[\d,]+\.?\d*\s*[kK]?\s*(?:\/\s*)?(?:hour|hr|year|yr|annual|annually)?/gi,
+    ];
+
+    for (const pattern of salaryPatterns) {
+      const match = description.match(pattern);
+      if (match && match[0]) {
+        console.log('Found salary in description:', match[0]);
+        jobData.salary_range = match[0].trim();
+        break;
+      }
+    }
+
+    if (!jobData.salary_range) {
+      console.log('No salary pattern matched in description');
+      console.log('Description preview:', description.substring(0, 500));
+    }
+  } else {
+    console.log('Salary found in top card:', jobData.salary_range);
+  }
+
+  // Parse salary to extract min/max values
+  if (jobData.salary_range) {
+    const parsedSalary = parseSalary(jobData.salary_range);
+    jobData.salary_range = parsedSalary.salary_range;
+    jobData.salary_min = parsedSalary.salary_min;
+    jobData.salary_max = parsedSalary.salary_max;
+  }
 
   return jobData;
 };
@@ -331,6 +425,14 @@ const scrapeIndeed = async (page) => {
 
   jobData.experience_level = extractExperienceLevel(jobData.job_title + ' ' + description);
   jobData.aligned_sector = extractSector(jobData.job_title + ' ' + description);
+
+  // Parse salary to extract min/max values
+  if (jobData.salary_range) {
+    const parsedSalary = parseSalary(jobData.salary_range);
+    jobData.salary_range = parsedSalary.salary_range;
+    jobData.salary_min = parsedSalary.salary_min;
+    jobData.salary_max = parsedSalary.salary_max;
+  }
 
   return jobData;
 };
@@ -384,6 +486,14 @@ const scrapeGeneric = async (page) => {
   const bodyText = await page.evaluate(() => document.body.textContent);
   jobData.experience_level = extractExperienceLevel(bodyText);
   jobData.aligned_sector = extractSector(bodyText);
+
+  // Parse salary to extract min/max values
+  if (jobData.salary_range) {
+    const parsedSalary = parseSalary(jobData.salary_range);
+    jobData.salary_range = parsedSalary.salary_range;
+    jobData.salary_min = parsedSalary.salary_min;
+    jobData.salary_max = parsedSalary.salary_max;
+  }
 
   return jobData;
 };
