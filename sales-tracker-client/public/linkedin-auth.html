@@ -84,47 +84,75 @@
   </div>
 
   <div class="step">
-    <h3>Step 2: Get your LinkedIn cookie and upload it</h3>
+    <h3>Step 2: Extract ALL LinkedIn cookies and session info</h3>
 
-    <p><strong>Instructions to extract the li_at cookie:</strong></p>
+    <p><strong>Run this command in LinkedIn's Developer Console:</strong></p>
     <ol>
-      <li>Open <a href="https://www.linkedin.com" target="_blank">LinkedIn.com</a> (make sure you're logged in)</li>
-      <li>Open Developer Tools:
+      <li>Open <a href="https://www.linkedin.com" target="_blank">LinkedIn.com</a> in a new tab (make sure you're logged in)</li>
+      <li>Open Developer Tools Console:
         <ul style="margin: 5px 0;">
-          <li><strong>Windows/Linux:</strong> Press <code>F12</code> or <code>Ctrl + Shift + I</code></li>
-          <li><strong>Mac:</strong> Press <code>Cmd + Option + I</code></li>
+          <li><strong>Windows/Linux:</strong> Press <code>F12</code> or <code>Ctrl + Shift + I</code>, then click <strong>Console</strong> tab</li>
+          <li><strong>Mac:</strong> Press <code>Cmd + Option + I</code>, then click <strong>Console</strong> tab</li>
         </ul>
       </li>
-      <li><strong>Chrome/Edge:</strong> Click the <strong>Application</strong> tab → expand <strong>Cookies</strong> → click <code>https://www.linkedin.com</code></li>
-      <li><strong>Firefox:</strong> Click the <strong>Storage</strong> tab → expand <strong>Cookies</strong> → click <code>https://www.linkedin.com</code></li>
-      <li>Find the cookie named <code>li_at</code> in the list</li>
-      <li>Double-click the <strong>Value</strong> column and copy the entire value (it should start with something like "AQED...")</li>
+      <li>Copy and paste this entire command into the console and press Enter:</li>
+    </ol>
+
+    <div style="background: #f4f4f4; padding: 15px; border-radius: 4px; margin: 15px 0; position: relative;">
+      <button onclick="copyCookieExtractionCommand()" style="position: absolute; top: 10px; right: 10px; padding: 5px 10px; font-size: 12px;">Copy Command</button>
+      <pre id="cookieCommand" style="margin: 0; overflow-x: auto; font-size: 12px; white-space: pre-wrap; word-wrap: break-word;">copy(JSON.stringify({
+  cookies: document.cookie.split('; ').map(c => {
+    const [name, value] = c.split('=');
+    return { name, value, domain: '.linkedin.com', path: '/', secure: true, httpOnly: name === 'li_at' };
+  }),
+  userAgent: navigator.userAgent,
+  platform: navigator.platform
+}, null, 2))</pre>
+    </div>
+
+    <ol start="4">
+      <li>After running the command, you'll see "undefined" in the console - that's normal! The data has been copied to your clipboard.</li>
+      <li>Paste the copied data into the box below and click Upload.</li>
     </ol>
 
     <div style="background: #fff3cd; padding: 15px; margin: 15px 0; border-radius: 4px; border-left: 4px solid #ffc107;">
-      <strong>⚠️ Important:</strong> The <code>li_at</code> cookie is HTTP-only, so you must copy it from DevTools. JavaScript console commands won't work.
+      <strong>⚠️ Note:</strong> This captures regular cookies. We'll also need the HTTP-only <code>li_at</code> cookie separately (see below).
     </div>
 
     <div style="background: #e7f3ff; padding: 15px; margin: 15px 0; border-radius: 4px; border-left: 4px solid #2196F3;">
       <strong>💡 Tip:</strong> To avoid being logged out while scraping:
       <ul style="margin: 10px 0 5px 20px;">
         <li><strong>Option 1 (Recommended):</strong> Create a separate LinkedIn account just for scraping</li>
-        <li><strong>Option 2:</strong> After copying the cookie, close your LinkedIn tab before scraping. You can log back in when done.</li>
+        <li><strong>Option 2:</strong> After extraction, close your LinkedIn tab before scraping. You can log back in when done.</li>
       </ul>
       LinkedIn detects when the same session is used in multiple places and may log you out for security.
     </div>
 
     <hr style="margin: 20px 0;">
 
-    <p><strong>Paste your cookie value here and click Upload:</strong></p>
-    <textarea id="cookieInput" placeholder="Paste your li_at cookie value here (e.g., AQEDAVkPhScFHBSS...)" style="width: 100%; height: 80px; font-family: monospace; font-size: 14px; margin-bottom: 10px;"></textarea>
+    <p><strong>Paste the extracted session data here:</strong></p>
+    <textarea id="cookieInput" placeholder='Paste the complete JSON output here (should start with { "cookies": [...] })' style="width: 100%; height: 120px; font-family: monospace; font-size: 12px; margin-bottom: 10px;"></textarea>
 
-    <button onclick="uploadCookieDirectly()" style="background: #0a66c2; font-size: 16px; padding: 15px 30px;">Upload Cookie to Server</button>
+    <p><strong>Then add the HTTP-only <code>li_at</code> cookie value:</strong></p>
+    <p style="font-size: 13px; margin: 5px 0 10px 0;">
+      In DevTools: <strong>Application</strong> tab → <strong>Cookies</strong> → <code>https://www.linkedin.com</code> →
+      Find <code>li_at</code> → Copy its Value
+    </p>
+    <textarea id="liAtInput" placeholder="Paste li_at cookie value here (e.g., AQEDAVkPhScFHBSS...)" style="width: 100%; height: 60px; font-family: monospace; font-size: 12px; margin-bottom: 10px;"></textarea>
+
+    <button onclick="uploadCookieDirectly()" style="background: #0a66c2; font-size: 16px; padding: 15px 30px;">Upload Session to Server</button>
 
     <div id="uploadResult" style="margin-top: 15px;"></div>
   </div>
 
   <script>
+    function copyCookieExtractionCommand() {
+      const command = document.getElementById('cookieCommand').textContent;
+      navigator.clipboard.writeText(command).then(() => {
+        alert('✅ Command copied! Now paste it in LinkedIn\'s console (F12 → Console tab).');
+      });
+    }
+
     function copyConsoleCommand() {
       const command = document.getElementById('consoleCommand').textContent;
       navigator.clipboard.writeText(command).then(() => {
@@ -134,30 +162,55 @@
 
     async function uploadCookieDirectly() {
       const resultDiv = document.getElementById('uploadResult');
-      const cookieValue = document.getElementById('cookieInput').value.trim();
+      const sessionData = document.getElementById('cookieInput').value.trim();
+      const liAtValue = document.getElementById('liAtInput').value.trim();
 
-      if (!cookieValue) {
-        resultDiv.innerHTML = '<div class="error">❌ Please paste your cookie value first!</div>';
+      if (!sessionData) {
+        resultDiv.innerHTML = '<div class="error">❌ Please paste the session data from the console command first!</div>';
         return;
       }
 
-      // Format the cookie
-      const cookies = [
-        {
+      if (!liAtValue) {
+        resultDiv.innerHTML = '<div class="error">❌ Please paste the li_at cookie value from DevTools!</div>';
+        return;
+      }
+
+      resultDiv.innerHTML = '<p>⏳ Processing and uploading session to server...</p>';
+
+      try {
+        // Parse the session data
+        let parsedData;
+        try {
+          parsedData = JSON.parse(sessionData);
+        } catch (e) {
+          throw new Error('Invalid session data format. Make sure you copied the entire JSON output from the console command.');
+        }
+
+        // Add the HTTP-only li_at cookie
+        const liAtCookie = {
           name: 'li_at',
-          value: cookieValue,
-          domain: '.www.linkedin.com',
+          value: liAtValue,
+          domain: '.linkedin.com',
           path: '/',
           expires: Math.floor(Date.now() / 1000) + (365 * 24 * 60 * 60),
           httpOnly: true,
           secure: true,
           sameSite: 'None'
-        }
-      ];
+        };
 
-      resultDiv.innerHTML = '<p>⏳ Uploading cookie to server...</p>';
+        // Format all cookies properly
+        const allCookies = [
+          liAtCookie,
+          ...parsedData.cookies.filter(c => c.name !== 'li_at').map(c => ({
+            name: c.name,
+            value: c.value,
+            domain: c.domain || '.linkedin.com',
+            path: c.path || '/',
+            secure: true,
+            httpOnly: false
+          }))
+        ];
 
-      try {
         // Get auth token from localStorage
         const token = localStorage.getItem('token');
         if (!token) {
@@ -175,7 +228,11 @@
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
-          body: JSON.stringify({ cookies })
+          body: JSON.stringify({
+            cookies: allCookies,
+            userAgent: parsedData.userAgent,
+            platform: parsedData.platform
+          })
         });
 
         const data = await response.json();
@@ -188,6 +245,7 @@
           <div class="success">
             ✅ ${data.message || 'Success!'}
             <br>Uploaded ${data.cookieCount} cookie(s) successfully!
+            <br>User-Agent: ${parsedData.userAgent.substring(0, 50)}...
             <br><br>
             <strong>LinkedIn scraping is now enabled for your team! 🎉</strong>
             <br><br>
@@ -201,7 +259,9 @@
             <br><br>
             ${error.message.includes('authenticated') ?
               '<strong>Tip:</strong> Make sure you\'re logged in to your sales tracker app first!' :
-              '<strong>Tip:</strong> Make sure you pasted the correct cookie value.'}
+              error.message.includes('Invalid session') ?
+              '<strong>Tip:</strong> Make sure you copied the ENTIRE output from the console command, including the curly braces.' :
+              '<strong>Tip:</strong> Make sure you pasted both the session data AND the li_at cookie value.'}
           </div>
         `;
       }

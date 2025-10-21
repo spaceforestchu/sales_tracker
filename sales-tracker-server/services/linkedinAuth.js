@@ -4,6 +4,7 @@ const fs = require('fs').promises;
 const { getPuppeteerConfig } = require('../utils/puppeteerConfig');
 
 const COOKIES_PATH = path.join(__dirname, '../.cache/linkedin-cookies.json');
+const SESSION_PATH = path.join(__dirname, '../.cache/linkedin-session.json');
 
 /**
  * Interactive login to LinkedIn - launches visible browser for manual login
@@ -48,17 +49,33 @@ const interactiveLogin = async () => {
 
     // Save cookies
     const cookies = await page.cookies();
+
+    // Get User-Agent and platform
+    const userAgent = await page.evaluate(() => navigator.userAgent);
+    const platform = await page.evaluate(() => navigator.platform);
+
+    // Save session data (cookies + metadata)
+    const sessionData = {
+      cookies,
+      userAgent,
+      platform,
+      savedAt: new Date().toISOString()
+    };
+
+    await fs.writeFile(SESSION_PATH, JSON.stringify(sessionData, null, 2));
+    // Keep the old format for backwards compatibility
     await fs.writeFile(COOKIES_PATH, JSON.stringify(cookies, null, 2));
 
-    console.log('💾 Cookies saved successfully!');
-    console.log(`   Saved to: ${COOKIES_PATH}`);
-    console.log('   These cookies will be used for future scraping.');
+    console.log('💾 Session saved successfully!');
+    console.log(`   Saved to: ${SESSION_PATH}`);
+    console.log(`   Cookies: ${cookies.length}`);
+    console.log(`   User-Agent: ${userAgent.substring(0, 50)}...`);
 
     await browser.close();
 
     return {
       success: true,
-      message: 'LinkedIn authentication successful! Cookies saved.',
+      message: 'LinkedIn authentication successful! Session saved.',
       cookieCount: cookies.length
     };
 
@@ -77,19 +94,46 @@ const interactiveLogin = async () => {
 };
 
 /**
- * Load saved LinkedIn cookies
+ * Load saved LinkedIn session (cookies + metadata)
+ * Returns null if no session file exists
+ */
+const loadSession = async () => {
+  try {
+    const sessionString = await fs.readFile(SESSION_PATH, 'utf8');
+    const session = JSON.parse(sessionString);
+    console.log(`✅ Loaded LinkedIn session from cache`);
+    console.log(`   Cookies: ${session.cookies?.length || 0}`);
+    console.log(`   User-Agent: ${session.userAgent ? session.userAgent.substring(0, 50) + '...' : 'N/A'}`);
+    return session;
+  } catch (error) {
+    // Fallback to old cookies-only format
+    try {
+      const cookiesString = await fs.readFile(COOKIES_PATH, 'utf8');
+      const cookies = JSON.parse(cookiesString);
+      console.log(`✅ Loaded ${cookies.length} LinkedIn cookies from cache (old format)`);
+      return { cookies, userAgent: null, platform: null };
+    } catch {
+      console.log('ℹ️  No saved LinkedIn session found');
+      return null;
+    }
+  }
+};
+
+/**
+ * Load saved LinkedIn cookies (for backwards compatibility)
  * Returns null if no cookies file exists
  */
 const loadCookies = async () => {
-  try {
-    const cookiesString = await fs.readFile(COOKIES_PATH, 'utf8');
-    const cookies = JSON.parse(cookiesString);
-    console.log(`✅ Loaded ${cookies.length} LinkedIn cookies from cache`);
-    return cookies;
-  } catch (error) {
-    console.log('ℹ️  No saved LinkedIn cookies found');
-    return null;
-  }
+  const session = await loadSession();
+  return session?.cookies || null;
+};
+
+/**
+ * Get saved User-Agent
+ */
+const getUserAgent = async () => {
+  const session = await loadSession();
+  return session?.userAgent || null;
 };
 
 /**
@@ -123,16 +167,21 @@ const hasSavedCookies = async () => {
 };
 
 /**
- * Clear saved cookies
+ * Clear saved cookies and session
  */
 const clearCookies = async () => {
   try {
-    await fs.unlink(COOKIES_PATH);
-    console.log('✅ LinkedIn cookies cleared');
-    return { success: true, message: 'Cookies cleared' };
+    // Clear both session and cookies files
+    const promises = [
+      fs.unlink(SESSION_PATH).catch(() => {}),
+      fs.unlink(COOKIES_PATH).catch(() => {})
+    ];
+    await Promise.all(promises);
+    console.log('✅ LinkedIn session and cookies cleared');
+    return { success: true, message: 'Session and cookies cleared' };
   } catch (error) {
     if (error.code === 'ENOENT') {
-      return { success: true, message: 'No cookies to clear' };
+      return { success: true, message: 'No session to clear' };
     }
     throw error;
   }
@@ -141,6 +190,8 @@ const clearCookies = async () => {
 module.exports = {
   interactiveLogin,
   loadCookies,
+  loadSession,
+  getUserAgent,
   applyCookies,
   hasSavedCookies,
   clearCookies

@@ -55,12 +55,12 @@ router.get('/status', auth, async (req, res) => {
 
 /**
  * POST /api/linkedin-auth/upload-cookies
- * Manually upload LinkedIn cookies (for remote servers)
+ * Manually upload LinkedIn session (cookies + userAgent + platform)
  * Admin only
  */
 router.post('/upload-cookies', auth, adminAuth, async (req, res) => {
   try {
-    const { cookies } = req.body;
+    const { cookies, userAgent, platform } = req.body;
 
     if (!cookies || !Array.isArray(cookies)) {
       return res.status(400).json({ error: 'Invalid cookies format. Expected array of cookie objects.' });
@@ -70,23 +70,40 @@ router.post('/upload-cookies', auth, adminAuth, async (req, res) => {
     const path = require('path');
     const cacheDir = path.join(__dirname, '../.cache');
     const COOKIES_PATH = path.join(cacheDir, 'linkedin-cookies.json');
+    const SESSION_PATH = path.join(cacheDir, 'linkedin-session.json');
 
     // Create .cache directory if it doesn't exist
     await fs.mkdir(cacheDir, { recursive: true });
 
-    // Write cookies to file
+    // Create session data
+    const sessionData = {
+      cookies,
+      userAgent: userAgent || null,
+      platform: platform || null,
+      savedAt: new Date().toISOString()
+    };
+
+    // Write session file (new format with metadata)
+    await fs.writeFile(SESSION_PATH, JSON.stringify(sessionData, null, 2));
+
+    // Write cookies file (old format for backwards compatibility)
     await fs.writeFile(COOKIES_PATH, JSON.stringify(cookies, null, 2));
 
-    console.log(`✅ Uploaded ${cookies.length} LinkedIn cookies to ${COOKIES_PATH}`);
+    console.log(`✅ Uploaded LinkedIn session to ${SESSION_PATH}`);
+    console.log(`   Cookies: ${cookies.length}`);
+    console.log(`   User-Agent: ${userAgent ? userAgent.substring(0, 50) + '...' : 'N/A'}`);
+    console.log(`   Platform: ${platform || 'N/A'}`);
 
     res.json({
       success: true,
-      message: 'LinkedIn cookies uploaded successfully',
-      cookieCount: cookies.length
+      message: 'LinkedIn session uploaded successfully',
+      cookieCount: cookies.length,
+      hasUserAgent: !!userAgent,
+      hasPlatform: !!platform
     });
   } catch (error) {
-    console.error('Error uploading cookies:', error);
-    res.status(500).json({ error: 'Error uploading cookies: ' + error.message });
+    console.error('Error uploading session:', error);
+    res.status(500).json({ error: 'Error uploading session: ' + error.message });
   }
 });
 

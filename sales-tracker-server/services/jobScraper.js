@@ -1,6 +1,6 @@
 const puppeteer = require('puppeteer');
 const path = require('path');
-const { loadCookies, applyCookies } = require('./linkedinAuth');
+const { loadCookies, loadSession, applyCookies } = require('./linkedinAuth');
 const { getPuppeteerConfig } = require('../utils/puppeteerConfig');
 const { parseSalary } = require('../utils/salaryParser');
 
@@ -20,9 +20,30 @@ const scrapeJobPosting = async (url) => {
 
     const page = await browser.newPage();
 
-    // Set viewport and user agent
+    // Set viewport
     await page.setViewport({ width: 1920, height: 1080 });
-    await page.setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+
+    // Load session if LinkedIn (to get matching User-Agent)
+    let userAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+
+    if (site === 'linkedin') {
+      const session = await loadSession();
+      if (session) {
+        // Use the exact same User-Agent that was used when cookies were created
+        if (session.userAgent) {
+          userAgent = session.userAgent;
+          console.log(`✅ Using saved User-Agent: ${userAgent.substring(0, 50)}...`);
+        }
+
+        await applyCookies(page, session.cookies);
+        console.log('✅ Using saved LinkedIn session');
+      } else {
+        throw new Error('LinkedIn authentication required. Please ask an admin to authenticate first at /api/linkedin-auth/login');
+      }
+    }
+
+    // Set user agent (use stored one for LinkedIn, default for others)
+    await page.setUserAgent(userAgent);
 
     // Stealth measures to avoid detection
     await page.evaluateOnNewDocument(() => {
@@ -53,17 +74,6 @@ const scrapeJobPosting = async (url) => {
           originalQuery(parameters)
       );
     });
-
-    // If LinkedIn, try to use saved cookies instead of logging in
-    if (site === 'linkedin') {
-      const cookies = await loadCookies();
-      if (cookies) {
-        await applyCookies(page, cookies);
-        console.log('✅ Using saved LinkedIn cookies');
-      } else {
-        throw new Error('LinkedIn authentication required. Please ask an admin to authenticate first at /api/linkedin-auth/login');
-      }
-    }
 
     // Navigate to the URL with timeout
     await page.goto(url, {
