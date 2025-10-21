@@ -40,7 +40,7 @@ const register = async (req, res) => {
       name,
       email,
       password: hashedPassword,
-      role: shouldBeAdmin ? 'admin' : (role || 'staff')
+      role: shouldBeAdmin ? 'admin' : (role || 'admin')
     });
 
     // Generate JWT token
