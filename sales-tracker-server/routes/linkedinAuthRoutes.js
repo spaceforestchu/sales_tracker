@@ -53,6 +53,35 @@ router.get('/status', verifyToken, async (req, res) => {
 });
 
 /**
+ * POST /api/linkedin-auth/upload-cookies
+ * Manually upload LinkedIn cookies (for remote servers)
+ * Admin only
+ */
+router.post('/upload-cookies', verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    const { cookies } = req.body;
+
+    if (!cookies || !Array.isArray(cookies)) {
+      return res.status(400).json({ error: 'Invalid cookies format. Expected array of cookie objects.' });
+    }
+
+    const fs = require('fs').promises;
+    const path = require('path');
+    const COOKIES_PATH = path.join(__dirname, '../.cache/linkedin-cookies.json');
+
+    await fs.writeFile(COOKIES_PATH, JSON.stringify(cookies, null, 2));
+
+    res.json({
+      success: true,
+      message: 'LinkedIn cookies uploaded successfully',
+      cookieCount: cookies.length
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Error uploading cookies' });
+  }
+});
+
+/**
  * DELETE /api/linkedin-auth/logout
  * Clear saved LinkedIn cookies
  * Admin only
