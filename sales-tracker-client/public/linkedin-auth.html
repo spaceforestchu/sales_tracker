@@ -84,45 +84,30 @@
   </div>
 
   <div class="step">
-    <h3>Step 2: Copy LinkedIn cookies manually</h3>
-    <p><strong>Instructions:</strong></p>
+    <h3>Step 2: Copy your LinkedIn cookie</h3>
+    <p><strong>Easy Method (Chrome Console):</strong></p>
     <ol>
       <li>Open <a href="https://www.linkedin.com" target="_blank">LinkedIn.com</a> (make sure you're logged in)</li>
       <li>Press <code>F12</code> or <code>Cmd+Option+I</code> to open DevTools</li>
-      <li>Go to <strong>Application</strong> tab (or <strong>Storage</strong> in Firefox)</li>
-      <li>Click <strong>Cookies</strong> → <strong>https://www.linkedin.com</strong></li>
-      <li>Right-click on any cookie and select <strong>"Show All Columns"</strong></li>
-      <li>Use the helper below to build the JSON</li>
+      <li>Go to <strong>Console</strong> tab</li>
+      <li>Paste this command and press Enter:</li>
+    </ol>
+    <code style="display: block; background: #f4f4f4; padding: 10px; margin: 10px 0;">document.cookie.split('; ').find(c => c.startsWith('li_at=')).split('=')[1]</code>
+    <p>Copy the output (long random string) and paste it below:</p>
+
+    <p><strong>OR Manual Method:</strong></p>
+    <ol>
+      <li>Press <code>F12</code> → <strong>Application</strong> tab → <strong>Cookies</strong> → <strong>https://www.linkedin.com</strong></li>
+      <li>Find the <code>li_at</code> cookie</li>
+      <li>Double-click its Value and copy it</li>
     </ol>
 
-    <p><strong>Copy these important cookies:</strong></p>
-    <textarea id="manualCookies" placeholder='Paste cookies in this format:
-[
-  {
-    "name": "li_at",
-    "value": "your-value-here",
-    "domain": ".linkedin.com",
-    "path": "/",
-    "expires": 1234567890,
-    "httpOnly": true,
-    "secure": true,
-    "sameSite": "None"
-  },
-  {
-    "name": "JSESSIONID",
-    "value": "your-value-here",
-    "domain": ".linkedin.com",
-    "path": "/",
-    "expires": 1234567890,
-    "httpOnly": false,
-    "secure": true,
-    "sameSite": "None"
-  }
-]
+    <p><strong>Paste your li_at cookie value here:</strong></p>
+    <textarea id="manualCookies" placeholder="Paste just the cookie value here (e.g., AQEDAVkPhScFHBSS...)
 
-At minimum, copy the "li_at" cookie - that is the main authentication cookie!' style="width: 100%; height: 300px; font-family: monospace; font-size: 12px;"></textarea>
+The page will automatically format it as JSON for you!" style="width: 100%; height: 100px; font-family: monospace; font-size: 14px;"></textarea>
     <br>
-    <button onclick="useManualCookies()">Load These Cookies</button>
+    <button onclick="useManualCookies()">Load Cookie</button>
     <div id="cookieResult"></div>
   </div>
 
@@ -196,12 +181,37 @@ At minimum, copy the "li_at" cookie - that is the main authentication cookie!' s
     function useManualCookies() {
       const resultDiv = document.getElementById('cookieResult');
       try {
-        const text = document.getElementById('manualCookies').value;
-        extractedCookies = JSON.parse(text);
+        let text = document.getElementById('manualCookies').value.trim();
+
+        // If it's already JSON, parse it
+        if (text.startsWith('[') || text.startsWith('{')) {
+          extractedCookies = JSON.parse(text);
+        } else {
+          // It's just the cookie value - auto-format it
+          extractedCookies = [
+            {
+              name: 'li_at',
+              value: text,
+              domain: '.www.linkedin.com',
+              path: '/',
+              expires: Math.floor(Date.now() / 1000) + (365 * 24 * 60 * 60), // 1 year from now
+              httpOnly: true,
+              secure: true,
+              sameSite: 'None'
+            }
+          ];
+        }
+
         document.getElementById('uploadBtn').disabled = false;
-        resultDiv.innerHTML = '<div class="success">✅ Cookies loaded! Click "Upload to Server" below.</div>';
+        resultDiv.innerHTML = `
+          <div class="success">
+            ✅ Cookie loaded successfully!<br>
+            Found ${extractedCookies.length} cookie(s).<br>
+            Click "Upload to Server" below to save it.
+          </div>
+        `;
       } catch (error) {
-        resultDiv.innerHTML = `<div class="error">❌ Invalid JSON: ${error.message}</div>`;
+        resultDiv.innerHTML = `<div class="error">❌ Error: ${error.message}<br>Make sure you pasted the cookie value correctly.</div>`;
       }
     }
   </script>
