@@ -11,7 +11,6 @@ const scrapeJobPosting = async (url) => {
     // Launch browser with optimized settings
     browser = await puppeteer.launch({
       headless: true,
-      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || puppeteer.executablePath(),
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
