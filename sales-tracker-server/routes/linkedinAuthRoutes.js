@@ -1,14 +1,15 @@
 const express = require('express');
 const router = express.Router();
 const { interactiveLogin, hasSavedCookies, clearCookies } = require('../services/linkedinAuth');
-const { verifyToken, verifyAdmin } = require('../middleware/auth');
+const auth = require('../middleware/auth');
+const { adminAuth } = require('../middleware/auth');
 
 /**
  * POST /api/linkedin-auth/login
  * Interactive LinkedIn login - opens browser for manual login
  * Admin only - should be called once to authenticate
  */
-router.post('/login', verifyToken, verifyAdmin, async (req, res) => {
+router.post('/login', auth, adminAuth, async (req, res) => {
   try {
     console.log('🔐 Starting interactive LinkedIn login...');
     const result = await interactiveLogin();
@@ -38,7 +39,7 @@ router.post('/login', verifyToken, verifyAdmin, async (req, res) => {
  * GET /api/linkedin-auth/status
  * Check if we have saved LinkedIn cookies
  */
-router.get('/status', verifyToken, async (req, res) => {
+router.get('/status', auth, async (req, res) => {
   try {
     const hasAuth = await hasSavedCookies();
     res.json({
@@ -57,7 +58,7 @@ router.get('/status', verifyToken, async (req, res) => {
  * Manually upload LinkedIn cookies (for remote servers)
  * Admin only
  */
-router.post('/upload-cookies', verifyToken, verifyAdmin, async (req, res) => {
+router.post('/upload-cookies', auth, adminAuth, async (req, res) => {
   try {
     const { cookies } = req.body;
 
@@ -86,7 +87,7 @@ router.post('/upload-cookies', verifyToken, verifyAdmin, async (req, res) => {
  * Clear saved LinkedIn cookies
  * Admin only
  */
-router.delete('/logout', verifyToken, verifyAdmin, async (req, res) => {
+router.delete('/logout', auth, adminAuth, async (req, res) => {
   try {
     const result = await clearCookies();
     res.json(result);
