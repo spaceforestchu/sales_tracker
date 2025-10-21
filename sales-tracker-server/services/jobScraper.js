@@ -1,5 +1,6 @@
 const puppeteer = require('puppeteer');
 const path = require('path');
+const { loadCookies, applyCookies } = require('./linkedinAuth');
 
 // Scrape job details from various job posting websites using Puppeteer
 const scrapeJobPosting = async (url) => {
@@ -34,9 +35,15 @@ const scrapeJobPosting = async (url) => {
     await page.setViewport({ width: 1920, height: 1080 });
     await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
 
-    // If LinkedIn, login first before navigating to job URL
+    // If LinkedIn, try to use saved cookies instead of logging in
     if (site === 'linkedin') {
-      await loginToLinkedIn(page);
+      const cookies = await loadCookies();
+      if (cookies) {
+        await applyCookies(page, cookies);
+        console.log('✅ Using saved LinkedIn cookies');
+      } else {
+        throw new Error('LinkedIn authentication required. Please ask an admin to authenticate first at /api/linkedin-auth/login');
+      }
     }
 
     // Navigate to the URL with timeout

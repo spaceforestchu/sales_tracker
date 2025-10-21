@@ -42,6 +42,8 @@ const activityRoutes = require('./routes/activityRoutes');
 console.log('✓ activityRoutes loaded');
 const jobPostingBuilderRoutes = require('./routes/jobPostingBuilderRoutes');
 console.log('✓ jobPostingBuilderRoutes loaded');
+const linkedinAuthRoutes = require('./routes/linkedinAuthRoutes');
+console.log('✓ linkedinAuthRoutes loaded');
 
 // API endpoints
 app.use('/api/auth', authRoutes);
@@ -52,6 +54,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/builders', builderRoutes);
 app.use('/api/activities', activityRoutes);
 app.use('/api/applications', jobPostingBuilderRoutes);
+app.use('/api/linkedin-auth', linkedinAuthRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
