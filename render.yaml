@@ -1,0 +1,11 @@
+services:
+  # Frontend Static Site
+  - type: web
+    name: sales-tracker-frontend
+    env: static
+    buildCommand: cd sales-tracker-client && npm install && npm run build
+    staticPublishPath: sales-tracker-client/dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
