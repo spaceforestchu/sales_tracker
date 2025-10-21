@@ -68,9 +68,16 @@ router.post('/upload-cookies', auth, adminAuth, async (req, res) => {
 
     const fs = require('fs').promises;
     const path = require('path');
-    const COOKIES_PATH = path.join(__dirname, '../.cache/linkedin-cookies.json');
+    const cacheDir = path.join(__dirname, '../.cache');
+    const COOKIES_PATH = path.join(cacheDir, 'linkedin-cookies.json');
 
+    // Create .cache directory if it doesn't exist
+    await fs.mkdir(cacheDir, { recursive: true });
+
+    // Write cookies to file
     await fs.writeFile(COOKIES_PATH, JSON.stringify(cookies, null, 2));
+
+    console.log(`✅ Uploaded ${cookies.length} LinkedIn cookies to ${COOKIES_PATH}`);
 
     res.json({
       success: true,
@@ -78,7 +85,8 @@ router.post('/upload-cookies', auth, adminAuth, async (req, res) => {
       cookieCount: cookies.length
     });
   } catch (error) {
-    res.status(500).json({ error: 'Error uploading cookies' });
+    console.error('Error uploading cookies:', error);
+    res.status(500).json({ error: 'Error uploading cookies: ' + error.message });
   }
 });
 
