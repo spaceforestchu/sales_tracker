@@ -84,43 +84,117 @@
   </div>
 
   <div class="step">
-    <h3>Step 2: Copy your LinkedIn cookie</h3>
-    <p><strong>Easy Method (Chrome Console):</strong></p>
+    <h3>Step 2: Get your LinkedIn cookie and upload it</h3>
+
+    <p><strong>Method 1 - Chrome Console (Easiest):</strong></p>
     <ol>
       <li>Open <a href="https://www.linkedin.com" target="_blank">LinkedIn.com</a> (make sure you're logged in)</li>
-      <li>Press <code>F12</code> or <code>Cmd+Option+I</code> to open DevTools</li>
-      <li>Go to <strong>Console</strong> tab</li>
+      <li>Press <code>F12</code> → <strong>Console</strong> tab</li>
       <li>Paste this command and press Enter:</li>
     </ol>
-    <code style="display: block; background: #f4f4f4; padding: 10px; margin: 10px 0;">document.cookie.split('; ').find(c => c.startsWith('li_at=')).split('=')[1]</code>
-    <p>Copy the output (long random string) and paste it below:</p>
+    <div style="background: #f4f4f4; padding: 10px; margin: 10px 0; border-radius: 4px; position: relative;">
+      <code id="consoleCommand" style="font-family: monospace;">document.cookie.split('; ').find(c => c.startsWith('li_at=')).split('=')[1]</code>
+      <button onclick="copyConsoleCommand()" style="float: right; padding: 5px 10px; font-size: 12px;">Copy Command</button>
+    </div>
 
-    <p><strong>OR Manual Method:</strong></p>
-    <ol>
-      <li>Press <code>F12</code> → <strong>Application</strong> tab → <strong>Cookies</strong> → <strong>https://www.linkedin.com</strong></li>
-      <li>Find the <code>li_at</code> cookie</li>
-      <li>Double-click its Value and copy it</li>
-    </ol>
+    <p><strong>Method 2 - DevTools:</strong></p>
+    <p>Press <code>F12</code> → <strong>Application</strong> → <strong>Cookies</strong> → <strong>linkedin.com</strong> → Find <code>li_at</code> → Copy its Value</p>
 
-    <p><strong>Paste your li_at cookie value here:</strong></p>
-    <textarea id="manualCookies" placeholder="Paste just the cookie value here (e.g., AQEDAVkPhScFHBSS...)
+    <hr style="margin: 20px 0;">
 
-The page will automatically format it as JSON for you!" style="width: 100%; height: 100px; font-family: monospace; font-size: 14px;"></textarea>
-    <br>
-    <button onclick="useManualCookies()">Load Cookie</button>
-    <div id="cookieResult"></div>
-  </div>
+    <p><strong>Paste your cookie value here and click Upload:</strong></p>
+    <textarea id="cookieInput" placeholder="Paste your li_at cookie value here (e.g., AQEDAVkPhScFHBSS...)" style="width: 100%; height: 80px; font-family: monospace; font-size: 14px; margin-bottom: 10px;"></textarea>
 
-  <div class="step">
-    <h3>Step 3: Upload cookies to server</h3>
-    <p>After loading cookies above, upload them to enable scraping:</p>
-    <button id="uploadBtn" onclick="uploadCookies()" disabled>Upload to Server</button>
-    <div id="uploadResult"></div>
+    <button onclick="uploadCookieDirectly()" style="background: #0a66c2; font-size: 16px; padding: 15px 30px;">Upload Cookie to Server</button>
+
+    <div id="uploadResult" style="margin-top: 15px;"></div>
   </div>
 
   <script>
-    let extractedCookies = null;
+    function copyConsoleCommand() {
+      const command = document.getElementById('consoleCommand').textContent;
+      navigator.clipboard.writeText(command).then(() => {
+        alert('✅ Command copied! Paste it in LinkedIn\'s console.');
+      });
+    }
 
+    async function uploadCookieDirectly() {
+      const resultDiv = document.getElementById('uploadResult');
+      const cookieValue = document.getElementById('cookieInput').value.trim();
+
+      if (!cookieValue) {
+        resultDiv.innerHTML = '<div class="error">❌ Please paste your cookie value first!</div>';
+        return;
+      }
+
+      // Format the cookie
+      const cookies = [
+        {
+          name: 'li_at',
+          value: cookieValue,
+          domain: '.www.linkedin.com',
+          path: '/',
+          expires: Math.floor(Date.now() / 1000) + (365 * 24 * 60 * 60),
+          httpOnly: true,
+          secure: true,
+          sameSite: 'None'
+        }
+      ];
+
+      resultDiv.innerHTML = '<p>⏳ Uploading cookie to server...</p>';
+
+      try {
+        // Get auth token from localStorage
+        const token = localStorage.getItem('token');
+        if (!token) {
+          throw new Error('Not authenticated. Please log in to your sales tracker first, then come back to this page.');
+        }
+
+        // Get API URL
+        const apiUrl = window.location.hostname.includes('localhost')
+          ? 'http://localhost:4001'
+          : window.location.origin.replace('sales-tracker', 'sales-tracker-api');
+
+        const response = await fetch(`${apiUrl}/api/linkedin-auth/upload-cookies`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ cookies })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Upload failed');
+        }
+
+        resultDiv.innerHTML = `
+          <div class="success">
+            ✅ ${data.message || 'Success!'}
+            <br>Uploaded ${data.cookieCount} cookie(s) successfully!
+            <br><br>
+            <strong>LinkedIn scraping is now enabled for your team! 🎉</strong>
+            <br><br>
+            You can close this page and start scraping LinkedIn job postings.
+          </div>
+        `;
+      } catch (error) {
+        resultDiv.innerHTML = `
+          <div class="error">
+            ❌ Upload failed: ${error.message}
+            <br><br>
+            ${error.message.includes('authenticated') ?
+              '<strong>Tip:</strong> Make sure you\'re logged in to your sales tracker app first!' :
+              '<strong>Tip:</strong> Make sure you pasted the correct cookie value.'}
+          </div>
+        `;
+      }
+    }
+
+    // Legacy function (not used anymore but keeping for compatibility)
+    let extractedCookies = null;
     async function uploadCookies() {
       if (!extractedCookies) {
         alert('Please extract cookies first!');
