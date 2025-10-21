@@ -14,7 +14,7 @@ const scrapeJobPosting = async (url) => {
     const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH ||
       path.join(__dirname, '../.cache/puppeteer/chrome/linux-141.0.7390.78/chrome-linux64/chrome');
 
-    // Launch browser with optimized settings
+    // Launch browser with memory-optimized settings
     browser = await puppeteer.launch({
       headless: true,
       executablePath: executablePath,
@@ -24,8 +24,18 @@ const scrapeJobPosting = async (url) => {
         '--disable-dev-shm-usage',
         '--disable-accelerated-2d-canvas',
         '--disable-gpu',
-        '--window-size=1920x1080',
-        '--disable-extensions'
+        '--disable-software-rasterizer',
+        '--disable-extensions',
+        '--disable-background-networking',
+        '--disable-sync',
+        '--disable-translate',
+        '--hide-scrollbars',
+        '--metrics-recording-only',
+        '--mute-audio',
+        '--no-first-run',
+        '--safebrowsing-disable-auto-update',
+        '--single-process', // Run in single process to save memory
+        '--window-size=1024x768' // Smaller window
       ]
     });
 
