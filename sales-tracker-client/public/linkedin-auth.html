@@ -86,19 +86,24 @@
   <div class="step">
     <h3>Step 2: Get your LinkedIn cookie and upload it</h3>
 
-    <p><strong>Method 1 - Chrome Console (Easiest):</strong></p>
+    <p><strong>Instructions to extract the li_at cookie:</strong></p>
     <ol>
       <li>Open <a href="https://www.linkedin.com" target="_blank">LinkedIn.com</a> (make sure you're logged in)</li>
-      <li>Press <code>F12</code> → <strong>Console</strong> tab</li>
-      <li>Paste this command and press Enter:</li>
+      <li>Open Developer Tools:
+        <ul style="margin: 5px 0;">
+          <li><strong>Windows/Linux:</strong> Press <code>F12</code> or <code>Ctrl + Shift + I</code></li>
+          <li><strong>Mac:</strong> Press <code>Cmd + Option + I</code></li>
+        </ul>
+      </li>
+      <li><strong>Chrome/Edge:</strong> Click the <strong>Application</strong> tab → expand <strong>Cookies</strong> → click <code>https://www.linkedin.com</code></li>
+      <li><strong>Firefox:</strong> Click the <strong>Storage</strong> tab → expand <strong>Cookies</strong> → click <code>https://www.linkedin.com</code></li>
+      <li>Find the cookie named <code>li_at</code> in the list</li>
+      <li>Double-click the <strong>Value</strong> column and copy the entire value (it should start with something like "AQED...")</li>
     </ol>
-    <div style="background: #f4f4f4; padding: 10px; margin: 10px 0; border-radius: 4px; position: relative;">
-      <code id="consoleCommand" style="font-family: monospace;">document.cookie.split('; ').find(c => c.startsWith('li_at=')).split('=')[1]</code>
-      <button onclick="copyConsoleCommand()" style="float: right; padding: 5px 10px; font-size: 12px;">Copy Command</button>
-    </div>
 
-    <p><strong>Method 2 - DevTools:</strong></p>
-    <p>Press <code>F12</code> → <strong>Application</strong> → <strong>Cookies</strong> → <strong>linkedin.com</strong> → Find <code>li_at</code> → Copy its Value</p>
+    <div style="background: #fff3cd; padding: 15px; margin: 15px 0; border-radius: 4px; border-left: 4px solid #ffc107;">
+      <strong>⚠️ Important:</strong> The <code>li_at</code> cookie is HTTP-only, so you must copy it from DevTools. JavaScript console commands won't work.
+    </div>
 
     <hr style="margin: 20px 0;">
 
