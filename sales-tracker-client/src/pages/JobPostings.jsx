@@ -1504,12 +1504,15 @@ const JobPostings = () => {
                           Owner: <strong>{job.ownership}</strong>
                         </span>
                       )}
-                      {job.salary_range && (
+                    </div>
+
+                    {job.salary_range && (
+                      <div style={{ marginBottom: '1rem' }}>
                         <span className="all-leads__status" style={{ color: '#059669' }}>
                           Salary: <strong>{job.salary_range}</strong>
                         </span>
-                      )}
-                    </div>
+                      </div>
+                    )}
 
                     <div style={{ marginBottom: '1rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                       {/* Sectors Column */}
