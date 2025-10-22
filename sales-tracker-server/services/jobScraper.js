@@ -350,6 +350,33 @@ const scrapeLinkedIn = async (page) => {
     throw new Error('LinkedIn authentication expired or invalid. The page shows a login prompt instead of the job posting.');
   }
 
+  // Try to extract company industry from "About the company" section
+  const companyIndustry = await page.evaluate(() => {
+    // Look for company industry in multiple possible sections
+    const aboutSection = document.querySelector('.about-the-company') ||
+                        document.querySelector('[class*="company-details"]') ||
+                        document.querySelector('[class*="about-company"]') ||
+                        document.querySelector('[class*="org-about"]') ||
+                        document.querySelector('.jobs-company__company-description') ||
+                        document.querySelector('[data-test-id*="about"]');
+
+    if (aboutSection) {
+      const text = aboutSection.textContent || '';
+      return text;
+    }
+
+    // Fallback: look for any section with company info text
+    const allText = document.body.textContent || '';
+    const industryMatch = allText.match(/Industries?[\s:]+([^\n]+)/i);
+    if (industryMatch) {
+      return industryMatch[1];
+    }
+
+    return '';
+  });
+
+  console.log('🏭 Company industry info:', companyIndustry ? companyIndustry.substring(0, 100) + '...' : 'Not found');
+
   // Analyze description for experience level and sector
   const description = await page.evaluate(() => {
     const descElement = document.querySelector('.description__text') ||
@@ -360,7 +387,7 @@ const scrapeLinkedIn = async (page) => {
   });
 
   jobData.experience_level = extractExperienceLevel(jobData.job_title + ' ' + description);
-  jobData.aligned_sector = extractSector(jobData.job_title + ' ' + description);
+  jobData.aligned_sector = extractSector(jobData.job_title + ' ' + jobData.company_name + ' ' + companyIndustry + ' ' + description);
 
   // If no salary found in top card, search description text
   if (!jobData.salary_range || !jobData.salary_range.includes('$')) {
@@ -434,7 +461,7 @@ const scrapeIndeed = async (page) => {
   });
 
   jobData.experience_level = extractExperienceLevel(jobData.job_title + ' ' + description);
-  jobData.aligned_sector = extractSector(jobData.job_title + ' ' + description);
+  jobData.aligned_sector = extractSector(jobData.job_title + ' ' + jobData.company_name + ' ' + description);
 
   // Parse salary to extract min/max values
   if (jobData.salary_range) {
@@ -523,55 +550,177 @@ const extractExperienceLevel = (text) => {
   return null;
 };
 
-// Extract aligned sector from text using keyword analysis
+// Extract aligned sector from text using keyword scoring system
 const extractSector = (text) => {
   const textLower = text.toLowerCase();
 
-  // Product Design/UX - CHECK FIRST (very specific)
-  const designMatch = textLower.match(/\bproduct designer\b|\bux designer\b|\bui designer\b|\bux\/ui\b|\bui\/ux\b|\buser experience\b|\buser interface\b|\binteraction design\b|\bdesign system\b/);
-  if (designMatch) {
-    console.log('🎨 Design keyword matched:', designMatch[0]);
-    return ['Product Designer'];
-  }
-  // Technology/Software - CHECK SECOND (tech companies often mention healthcare as a customer)
-  const techMatch = textLower.match(/\bsoftware engineer\b|\bsoftware developer\b|\bfull.?stack\b|\bfront.?end\b|\bback.?end\b|\bdevops\b|\bcloud\b|\bkubernetes\b|\bdocker\b|\baws\b|\bazure\b|\bgcp\b|\breact\b|\bpython\b|\bjavascript\b|\bjava\b|\bapi\b|\bmicroservices\b|\bengineering\b|\bdeveloper\b/);
-  if (techMatch) {
-    console.log('💻 Tech keyword matched:', techMatch[0]);
-    return ['Software Engineer'];
-  }
-  // Healthcare - only if NOT a tech role
-  const healthcareMatch = textLower.match(/\bhealthcare\b|\bhealth care\b|\bmedical\b|\bhospital\b|\bclinic\b|\bnurse\b|\bdoctor\b|\bpatient\b|\bpharma\b|\bpharmacy\b|\bpatient care\b|\bhealth services\b/);
-  if (healthcareMatch) {
-    console.log('🏥 Healthcare keyword matched:', healthcareMatch[0]);
-    return ['Healthcare'];
-  }
-  // Finance
-  else if (textLower.match(/\bfinance\b|\bbanking\b|\binvestment\b|\baccounting\b|\bfinancial\b|\btrading\b|\bfinancial analyst\b|\bfintech\b/)) {
-    return ['Finance'];
-  }
-  // Manufacturing
-  else if (textLower.match(/\bmanufacturing\b|\bproduction\b|\bfactory\b|\bindustrial\b|\bassembly\b|\bsupply chain\b/)) {
-    return ['Manufacturing'];
-  }
-  // Retail
-  else if (textLower.match(/\bretail\b|\be-commerce\b|\becommerce\b|\bstore\b|\bmerchandis/)) {
-    return ['Retail'];
-  }
-  // Construction
-  else if (textLower.match(/\bconstruction\b|\bbuilding\b|\bcontractor\b|\barchitect\b|\bcivil engineer\b/)) {
-    return ['Construction'];
-  }
-  // Professional Services
-  else if (textLower.match(/\bconsulting\b|\bconsultant\b|\bprofessional services\b|\badvisory\b|\blegal\b|\blaw firm\b/)) {
-    return ['Professional Services'];
-  }
-  // Education
-  else if (textLower.match(/\beducation\b|\bteacher\b|\bprofessor\b|\bschool\b|\buniversity\b|\bacademic\b|\btraining\b/)) {
-    return ['Education'];
+  // Define sector keywords with patterns to match
+  const sectorKeywords = {
+    'Product Designer': [
+      /\bproduct designer\b/g,
+      /\bux designer\b/g,
+      /\bui designer\b/g,
+      /\bux\/ui\b/g,
+      /\bui\/ux\b/g,
+      /\buser experience\b/g,
+      /\buser interface\b/g,
+      /\binteraction design\b/g,
+      /\bdesign system\b/g,
+      /\bvisual design\b/g,
+      /\bprototyping\b/g,
+      /\bwireframe\b/g,
+      /\bfigma\b/g,
+      /\bsketch\b/g
+    ],
+    'Software Engineer': [
+      /\bsoftware engineer\b/g,
+      /\bsoftware developer\b/g,
+      /\bfull.?stack\b/g,
+      /\bfront.?end\b/g,
+      /\bback.?end\b/g,
+      /\bdevops\b/g,
+      /\bcloud\b/g,
+      /\bkubernetes\b/g,
+      /\bdocker\b/g,
+      /\baws\b/g,
+      /\bazure\b/g,
+      /\bgcp\b/g,
+      /\breact\b/g,
+      /\bpython\b/g,
+      /\bjavascript\b/g,
+      /\bjava\b/g,
+      /\bapi\b/g,
+      /\bmicroservices\b/g,
+      /\bengineering\b/g,
+      /\bdeveloper\b/g,
+      /\bsoftware development\b/g,
+      /\bci\/cd\b/g,
+      /\bgit\b/g
+    ],
+    'Finance': [
+      /\bfinance\b/g,
+      /\bbanking\b/g,
+      /\binvestment\b/g,
+      /\baccounting\b/g,
+      /\bfinancial services\b/g,
+      /\bfinancial\b/g,
+      /\btrading\b/g,
+      /\bfinancial analyst\b/g,
+      /\bfintech\b/g,
+      /\bhedge fund\b/g,
+      /\bprivate equity\b/g,
+      /\bventure capital\b/g,
+      /\basset management\b/g,
+      /\bwealth management\b/g,
+      /\bportfolio\b/g,
+      /\bequities\b/g,
+      /\bderivatives\b/g,
+      /\bquantitative\b/g,
+      /\brisk management\b/g
+    ],
+    'Healthcare': [
+      /\bhealthcare\b/g,
+      /\bhealth care\b/g,
+      /\bhospital\b/g,
+      /\bclinic\b/g,
+      /\bnurse\b/g,
+      /\bdoctor\b/g,
+      /\bpatient care\b/g,
+      /\bpharma\b/g,
+      /\bpharmacy\b/g,
+      /\bhealth services\b/g,
+      /\bclinical\b/g,
+      /\bmedical device\b/g,
+      /\btherapeutic\b/g,
+      /\bdiagnostic\b/g
+      // Note: removed just "medical" and "patient" as they appear in benefits sections
+    ],
+    'Manufacturing': [
+      /\bmanufacturing\b/g,
+      /\bproduction\b/g,
+      /\bfactory\b/g,
+      /\bindustrial\b/g,
+      /\bassembly\b/g,
+      /\bsupply chain\b/g,
+      /\bwarehouse\b/g,
+      /\blogistics\b/g
+    ],
+    'Retail': [
+      /\bretail\b/g,
+      /\be-commerce\b/g,
+      /\becommerce\b/g,
+      /\bstore\b/g,
+      /\bmerchandis/g,
+      /\bcustomer service\b/g,
+      /\bpoint of sale\b/g
+    ],
+    'Construction': [
+      /\bconstruction\b/g,
+      /\bbuilding construction\b/g,
+      /\bcontractor\b/g,
+      /\barchitect\b/g,
+      /\bcivil engineer\b/g,
+      /\bconstruction project\b/g,
+      /\bsite manager\b/g,
+      /\bgeneral contractor\b/g
+    ],
+    'Professional Services': [
+      /\bconsulting\b/g,
+      /\bconsultant\b/g,
+      /\bprofessional services\b/g,
+      /\badvisory\b/g,
+      /\blegal\b/g,
+      /\blaw firm\b/g,
+      /\brecruiting\b/g,
+      /\btalent acquisition\b/g,
+      /\bhuman resources\b/g,
+      /\bhr systems\b/g
+    ],
+    'Education': [
+      /\beducation\b/g,
+      /\bteacher\b/g,
+      /\bprofessor\b/g,
+      /\bschool\b/g,
+      /\buniversity\b/g,
+      /\bacademic\b/g,
+      /\btraining\b/g,
+      /\bcurriculum\b/g
+    ]
+  };
+
+  // Calculate scores for each sector
+  const scores = {};
+
+  for (const [sector, patterns] of Object.entries(sectorKeywords)) {
+    let score = 0;
+    const matchedKeywords = [];
+
+    for (const pattern of patterns) {
+      const matches = textLower.match(pattern);
+      if (matches) {
+        score += matches.length; // Count each occurrence
+        matchedKeywords.push(pattern.source.replace(/\\b/g, '').replace(/\\\//g, '/').replace(/\\.\\?/g, ''));
+      }
+    }
+
+    if (score > 0) {
+      scores[sector] = score;
+      console.log(`📊 ${sector}: ${score} points (keywords: ${matchedKeywords.slice(0, 3).join(', ')}${matchedKeywords.length > 3 ? '...' : ''})`);
+    }
   }
 
-  // Default to Other if no match
-  return ['Other'];
+  // Find the sector with the highest score
+  if (Object.keys(scores).length === 0) {
+    console.log('❓ No sector keywords found - defaulting to Other');
+    return ['Other'];
+  }
+
+  const topSector = Object.entries(scores).reduce((max, [sector, score]) =>
+    score > max.score ? { sector, score } : max
+  , { sector: 'Other', score: 0 });
+
+  console.log(`✅ Selected sector: ${topSector.sector} (${topSector.score} points)`);
+  return [topSector.sector];
 };
 
 module.exports = {
