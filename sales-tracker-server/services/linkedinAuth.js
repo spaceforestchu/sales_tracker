@@ -154,7 +154,11 @@ const loadSessionFromDb = async (userId) => {
     }
 
     const session = result.rows[0];
-    const cookies = JSON.parse(session.cookies);
+
+    // JSONB automatically deserializes to object, no need to parse
+    const cookies = typeof session.cookies === 'string'
+      ? JSON.parse(session.cookies)
+      : session.cookies;
 
     console.log(`✅ Loaded LinkedIn session from database for user ${userId}`);
     console.log(`   Cookies: ${cookies.length}`);

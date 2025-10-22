@@ -345,6 +345,7 @@ const AllLeads = () => {
   const alignedSectorOptions = [
     'Technology',
     'Software Engineer',
+    'Product Designer',
     'Healthcare',
     'Finance',
     'Manufacturing',

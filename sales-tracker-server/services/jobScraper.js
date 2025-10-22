@@ -527,39 +527,50 @@ const extractExperienceLevel = (text) => {
 const extractSector = (text) => {
   const textLower = text.toLowerCase();
 
-  // Healthcare (check first - more specific)
-  if (textLower.match(/health|medical|hospital|clinic|nurse|doctor|patient|pharma|pharmacy|care|healthcare/)) {
-    return ['Healthcare'];
+  // Product Design/UX - CHECK FIRST (very specific)
+  const designMatch = textLower.match(/\bproduct designer\b|\bux designer\b|\bui designer\b|\bux\/ui\b|\bui\/ux\b|\buser experience\b|\buser interface\b|\binteraction design\b|\bdesign system\b/);
+  if (designMatch) {
+    console.log('🎨 Design keyword matched:', designMatch[0]);
+    return ['Product Designer'];
   }
-  // Technology/Software
-  else if (textLower.match(/software|developer|engineer|tech|programming|code|web|app|data|cloud|ai|machine learning/)) {
+  // Technology/Software - CHECK SECOND (tech companies often mention healthcare as a customer)
+  const techMatch = textLower.match(/\bsoftware engineer\b|\bsoftware developer\b|\bfull.?stack\b|\bfront.?end\b|\bback.?end\b|\bdevops\b|\bcloud\b|\bkubernetes\b|\bdocker\b|\baws\b|\bazure\b|\bgcp\b|\breact\b|\bpython\b|\bjavascript\b|\bjava\b|\bapi\b|\bmicroservices\b|\bengineering\b|\bdeveloper\b/);
+  if (techMatch) {
+    console.log('💻 Tech keyword matched:', techMatch[0]);
     return ['Software Engineer'];
   }
+  // Healthcare - only if NOT a tech role
+  const healthcareMatch = textLower.match(/\bhealthcare\b|\bhealth care\b|\bmedical\b|\bhospital\b|\bclinic\b|\bnurse\b|\bdoctor\b|\bpatient\b|\bpharma\b|\bpharmacy\b|\bpatient care\b|\bhealth services\b/);
+  if (healthcareMatch) {
+    console.log('🏥 Healthcare keyword matched:', healthcareMatch[0]);
+    return ['Healthcare'];
+  }
   // Finance
-  else if (textLower.match(/finance|banking|investment|accounting|financial|trading|analyst/)) {
+  else if (textLower.match(/\bfinance\b|\bbanking\b|\binvestment\b|\baccounting\b|\bfinancial\b|\btrading\b|\bfinancial analyst\b|\bfintech\b/)) {
     return ['Finance'];
   }
   // Manufacturing
-  else if (textLower.match(/manufacturing|production|factory|industrial|assembly/)) {
+  else if (textLower.match(/\bmanufacturing\b|\bproduction\b|\bfactory\b|\bindustrial\b|\bassembly\b|\bsupply chain\b/)) {
     return ['Manufacturing'];
   }
   // Retail
-  else if (textLower.match(/retail|store|sales|customer service|merchandis/)) {
+  else if (textLower.match(/\bretail\b|\be-commerce\b|\becommerce\b|\bstore\b|\bmerchandis/)) {
     return ['Retail'];
   }
   // Construction
-  else if (textLower.match(/construction|building|contractor|architect|civil engineer/)) {
+  else if (textLower.match(/\bconstruction\b|\bbuilding\b|\bcontractor\b|\barchitect\b|\bcivil engineer\b/)) {
     return ['Construction'];
   }
   // Professional Services
-  else if (textLower.match(/consulting|professional services|advisory|legal|law/)) {
+  else if (textLower.match(/\bconsulting\b|\bconsultant\b|\bprofessional services\b|\badvisory\b|\blegal\b|\blaw firm\b/)) {
     return ['Professional Services'];
   }
   // Education
-  else if (textLower.match(/education|teacher|professor|school|university|academic|training/)) {
+  else if (textLower.match(/\beducation\b|\bteacher\b|\bprofessor\b|\bschool\b|\buniversity\b|\bacademic\b|\btraining\b/)) {
     return ['Education'];
   }
 
+  // Default to Other if no match
   return ['Other'];
 };
 

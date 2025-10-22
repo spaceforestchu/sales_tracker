@@ -90,6 +90,7 @@ const JobPostings = () => {
   const alignedSectorOptions = [
     'Technology',
     'Software Engineer',
+    'Product Designer',
     'Healthcare',
     'Finance',
     'Manufacturing',
