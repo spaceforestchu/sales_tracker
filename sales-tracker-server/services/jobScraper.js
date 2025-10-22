@@ -5,7 +5,7 @@ const { getPuppeteerConfig } = require('../utils/puppeteerConfig');
 const { parseSalary } = require('../utils/salaryParser');
 
 // Scrape job details from various job posting websites using Puppeteer
-const scrapeJobPosting = async (url) => {
+const scrapeJobPosting = async (url, userId = null) => {
   let browser = null;
 
   try {
@@ -27,7 +27,7 @@ const scrapeJobPosting = async (url) => {
     let userAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 
     if (site === 'linkedin') {
-      const session = await loadSession();
+      const session = await loadSession(userId);
       if (session) {
         // Use the exact same User-Agent that was used when cookies were created
         if (session.userAgent) {
@@ -36,9 +36,9 @@ const scrapeJobPosting = async (url) => {
         }
 
         await applyCookies(page, session.cookies);
-        console.log('✅ Using saved LinkedIn session');
+        console.log(userId ? `✅ Using LinkedIn session for user ${userId}` : '✅ Using saved LinkedIn session');
       } else {
-        throw new Error('LinkedIn authentication required. Please ask an admin to authenticate first at /api/linkedin-auth/login');
+        throw new Error('LinkedIn authentication required. Please upload your LinkedIn cookies at /linkedin-auth.html');
       }
     }
 

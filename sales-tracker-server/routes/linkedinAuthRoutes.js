@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { interactiveLogin, hasSavedCookies, clearCookies } = require('../services/linkedinAuth');
+const { interactiveLogin, hasSavedCookies, clearCookies, saveSessionToDb, loadSessionFromDb } = require('../services/linkedinAuth');
 const auth = require('../middleware/auth');
 const adminAuth = auth.adminAuth;
 
@@ -56,50 +56,52 @@ router.get('/status', auth, async (req, res) => {
 /**
  * POST /api/linkedin-auth/upload-cookies
  * Manually upload LinkedIn session (cookies + userAgent + platform)
+ * Saves to database for the authenticated user
  * Admin only
  */
 router.post('/upload-cookies', auth, adminAuth, async (req, res) => {
   try {
     const { cookies, userAgent, platform } = req.body;
+    const userId = req.user.id; // Get authenticated user's ID
 
     if (!cookies || !Array.isArray(cookies)) {
       return res.status(400).json({ error: 'Invalid cookies format. Expected array of cookie objects.' });
     }
 
+    // Save session to database for this user
+    await saveSessionToDb(userId, cookies, userAgent, platform);
+
+    // Also save to file for backward compatibility / local dev
     const fs = require('fs').promises;
     const path = require('path');
     const cacheDir = path.join(__dirname, '../.cache');
     const COOKIES_PATH = path.join(cacheDir, 'linkedin-cookies.json');
     const SESSION_PATH = path.join(cacheDir, 'linkedin-session.json');
 
-    // Create .cache directory if it doesn't exist
-    await fs.mkdir(cacheDir, { recursive: true });
+    try {
+      await fs.mkdir(cacheDir, { recursive: true });
 
-    // Create session data
-    const sessionData = {
-      cookies,
-      userAgent: userAgent || null,
-      platform: platform || null,
-      savedAt: new Date().toISOString()
-    };
+      const sessionData = {
+        cookies,
+        userAgent: userAgent || null,
+        platform: platform || null,
+        savedAt: new Date().toISOString()
+      };
 
-    // Write session file (new format with metadata)
-    await fs.writeFile(SESSION_PATH, JSON.stringify(sessionData, null, 2));
-
-    // Write cookies file (old format for backwards compatibility)
-    await fs.writeFile(COOKIES_PATH, JSON.stringify(cookies, null, 2));
-
-    console.log(`✅ Uploaded LinkedIn session to ${SESSION_PATH}`);
-    console.log(`   Cookies: ${cookies.length}`);
-    console.log(`   User-Agent: ${userAgent ? userAgent.substring(0, 50) + '...' : 'N/A'}`);
-    console.log(`   Platform: ${platform || 'N/A'}`);
+      await fs.writeFile(SESSION_PATH, JSON.stringify(sessionData, null, 2));
+      await fs.writeFile(COOKIES_PATH, JSON.stringify(cookies, null, 2));
+    } catch (fileError) {
+      // File save is optional, don't fail if it errors
+      console.log('ℹ️  Could not save to file cache (not critical):', fileError.message);
+    }
 
     res.json({
       success: true,
       message: 'LinkedIn session uploaded successfully',
       cookieCount: cookies.length,
       hasUserAgent: !!userAgent,
-      hasPlatform: !!platform
+      hasPlatform: !!platform,
+      userId: userId
     });
   } catch (error) {
     console.error('Error uploading session:', error);

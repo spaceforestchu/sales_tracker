@@ -1,6 +1,7 @@
 const puppeteer = require('puppeteer');
 const path = require('path');
 const fs = require('fs').promises;
+const pool = require('../db/dbConfig');
 const { getPuppeteerConfig } = require('../utils/puppeteerConfig');
 
 const COOKIES_PATH = path.join(__dirname, '../.cache/linkedin-cookies.json');
@@ -94,14 +95,103 @@ const interactiveLogin = async () => {
 };
 
 /**
+ * Save LinkedIn session to database for a specific user
+ */
+const saveSessionToDb = async (userId, cookies, userAgent, platform) => {
+  try {
+    // Calculate expiration (1 year from now - typical LinkedIn session lifetime)
+    const expiresAt = new Date();
+    expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+
+    const query = `
+      INSERT INTO linkedin_sessions (user_id, cookies, user_agent, platform, expires_at, updated_at)
+      VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)
+      ON CONFLICT (user_id)
+      DO UPDATE SET
+        cookies = EXCLUDED.cookies,
+        user_agent = EXCLUDED.user_agent,
+        platform = EXCLUDED.platform,
+        expires_at = EXCLUDED.expires_at,
+        updated_at = CURRENT_TIMESTAMP
+      RETURNING *
+    `;
+
+    const result = await pool.query(query, [
+      userId,
+      JSON.stringify(cookies),
+      userAgent,
+      platform,
+      expiresAt
+    ]);
+
+    console.log(`✅ Saved LinkedIn session to database for user ${userId}`);
+    console.log(`   Cookies: ${cookies.length}`);
+    console.log(`   User-Agent: ${userAgent ? userAgent.substring(0, 50) + '...' : 'N/A'}`);
+
+    return result.rows[0];
+  } catch (error) {
+    console.error('❌ Error saving session to database:', error.message);
+    throw error;
+  }
+};
+
+/**
+ * Load LinkedIn session from database for a specific user
+ */
+const loadSessionFromDb = async (userId) => {
+  try {
+    const query = `
+      SELECT * FROM linkedin_sessions
+      WHERE user_id = $1
+      AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)
+    `;
+
+    const result = await pool.query(query, [userId]);
+
+    if (result.rows.length === 0) {
+      console.log(`ℹ️  No LinkedIn session found for user ${userId}`);
+      return null;
+    }
+
+    const session = result.rows[0];
+    const cookies = JSON.parse(session.cookies);
+
+    console.log(`✅ Loaded LinkedIn session from database for user ${userId}`);
+    console.log(`   Cookies: ${cookies.length}`);
+    console.log(`   User-Agent: ${session.user_agent ? session.user_agent.substring(0, 50) + '...' : 'N/A'}`);
+
+    return {
+      cookies,
+      userAgent: session.user_agent,
+      platform: session.platform,
+      savedAt: session.created_at,
+      updatedAt: session.updated_at
+    };
+  } catch (error) {
+    console.error('❌ Error loading session from database:', error.message);
+    return null;
+  }
+};
+
+/**
  * Load saved LinkedIn session (cookies + metadata)
  * Returns null if no session file exists
+ * @param {number} userId - Optional user ID to load session for specific user (database)
  */
-const loadSession = async () => {
+const loadSession = async (userId = null) => {
+  // If userId provided, try database first
+  if (userId) {
+    const dbSession = await loadSessionFromDb(userId);
+    if (dbSession) {
+      return dbSession;
+    }
+  }
+
+  // Fallback to file-based session (for backward compatibility / local dev)
   try {
     const sessionString = await fs.readFile(SESSION_PATH, 'utf8');
     const session = JSON.parse(sessionString);
-    console.log(`✅ Loaded LinkedIn session from cache`);
+    console.log(`✅ Loaded LinkedIn session from file cache`);
     console.log(`   Cookies: ${session.cookies?.length || 0}`);
     console.log(`   User-Agent: ${session.userAgent ? session.userAgent.substring(0, 50) + '...' : 'N/A'}`);
     return session;
@@ -110,7 +200,7 @@ const loadSession = async () => {
     try {
       const cookiesString = await fs.readFile(COOKIES_PATH, 'utf8');
       const cookies = JSON.parse(cookiesString);
-      console.log(`✅ Loaded ${cookies.length} LinkedIn cookies from cache (old format)`);
+      console.log(`✅ Loaded ${cookies.length} LinkedIn cookies from file cache (old format)`);
       return { cookies, userAgent: null, platform: null };
     } catch {
       console.log('ℹ️  No saved LinkedIn session found');
@@ -122,17 +212,19 @@ const loadSession = async () => {
 /**
  * Load saved LinkedIn cookies (for backwards compatibility)
  * Returns null if no cookies file exists
+ * @param {number} userId - Optional user ID to load cookies for specific user
  */
-const loadCookies = async () => {
-  const session = await loadSession();
+const loadCookies = async (userId = null) => {
+  const session = await loadSession(userId);
   return session?.cookies || null;
 };
 
 /**
  * Get saved User-Agent
+ * @param {number} userId - Optional user ID to get User-Agent for specific user
  */
-const getUserAgent = async () => {
-  const session = await loadSession();
+const getUserAgent = async (userId = null) => {
+  const session = await loadSession(userId);
   return session?.userAgent || null;
 };
 
@@ -191,6 +283,8 @@ module.exports = {
   interactiveLogin,
   loadCookies,
   loadSession,
+  loadSessionFromDb,
+  saveSessionToDb,
   getUserAgent,
   applyCookies,
   hasSavedCookies,

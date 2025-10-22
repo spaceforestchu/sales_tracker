@@ -121,12 +121,13 @@ const deleteJobPosting = async (req, res) => {
 const scrapeJobUrl = async (req, res) => {
   try {
     const { url } = req.body;
+    const userId = req.user?.id; // Get authenticated user's ID
 
     if (!url) {
       return res.status(400).json({ error: 'URL is required' });
     }
 
-    const result = await jobScraper.scrapeJobPosting(url);
+    const result = await jobScraper.scrapeJobPosting(url, userId);
 
     if (!result.success) {
       return res.status(500).json({ error: result.error });
