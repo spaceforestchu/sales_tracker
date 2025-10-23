@@ -817,6 +817,12 @@ const AllLeads = () => {
       </header>
 
       <nav className="overview__nav">
+        <button
+          className="overview__nav-item"
+          onClick={() => navigate('/dashboard')}
+        >
+          Dashboard
+        </button>
         <button className="overview__nav-item overview__nav-item--active">
           All Leads
         </button>
@@ -1208,6 +1214,19 @@ const AllLeads = () => {
                 <option key={member.id} value={member.name}>{member.name}</option>
               ))}
             </select>
+
+            {/* Total Counter - Inline */}
+            <div style={{
+              padding: '8px 16px',
+              fontSize: '14px',
+              fontWeight: '600',
+              color: '#374151',
+              marginLeft: 'auto',
+              display: 'flex',
+              alignItems: 'center'
+            }}>
+              Showing {filteredLeads.filter(lead => lead.lead_type === 'contact' || !lead.lead_type).length} leads
+            </div>
           </div>
 
           {/* Contact Leads List */}

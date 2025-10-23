@@ -98,8 +98,8 @@ function App() {
           />
           
           {/* Default Routes */}
-          <Route path="/" element={<Navigate to="/leads" replace />} />
-          <Route path="*" element={<Navigate to="/leads" replace />} />
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </AuthProvider>
     </Router>

@@ -769,6 +769,12 @@ const JobPostings = () => {
       <nav className="overview__nav">
         <button
           className="overview__nav-item"
+          onClick={() => navigate('/dashboard')}
+        >
+          Dashboard
+        </button>
+        <button
+          className="overview__nav-item"
           onClick={() => navigate('/leads')}
         >
           All Leads
@@ -1146,6 +1152,17 @@ const JobPostings = () => {
               </svg>
               Filters
             </button>
+
+            {/* Total Counter - Inline */}
+            <div style={{
+              padding: '10px 16px',
+              fontSize: '14px',
+              fontWeight: '600',
+              color: '#374151',
+              marginLeft: 'auto'
+            }}>
+              Showing {filteredJobPostings.length} jobs
+            </div>
           </div>
 
           {/* Date Filter Panel */}
