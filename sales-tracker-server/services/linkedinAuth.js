@@ -140,16 +140,37 @@ const saveSessionToDb = async (userId, cookies, userAgent, platform) => {
  */
 const loadSessionFromDb = async (userId) => {
   try {
-    const query = `
-      SELECT * FROM linkedin_sessions
-      WHERE user_id = $1
-      AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)
-    `;
+    let query, params;
 
-    const result = await pool.query(query, [userId]);
+    if (userId) {
+      // Try to load for specific user first
+      query = `
+        SELECT * FROM linkedin_sessions
+        WHERE user_id = $1
+        AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)
+      `;
+      params = [userId];
+    } else {
+      // If no userId provided, load the most recent valid session from any admin
+      query = `
+        SELECT ls.* FROM linkedin_sessions ls
+        JOIN users u ON ls.user_id = u.id
+        WHERE u.is_admin = true
+        AND (ls.expires_at IS NULL OR ls.expires_at > CURRENT_TIMESTAMP)
+        ORDER BY ls.updated_at DESC
+        LIMIT 1
+      `;
+      params = [];
+    }
+
+    const result = await pool.query(query, params);
 
     if (result.rows.length === 0) {
-      console.log(`ℹ️  No LinkedIn session found for user ${userId}`);
+      if (userId) {
+        console.log(`ℹ️  No LinkedIn session found for user ${userId}`);
+      } else {
+        console.log(`ℹ️  No LinkedIn session found in database`);
+      }
       return null;
     }
 
@@ -160,7 +181,11 @@ const loadSessionFromDb = async (userId) => {
       ? JSON.parse(session.cookies)
       : session.cookies;
 
-    console.log(`✅ Loaded LinkedIn session from database for user ${userId}`);
+    if (userId) {
+      console.log(`✅ Loaded LinkedIn session from database for user ${userId}`);
+    } else {
+      console.log(`✅ Loaded LinkedIn session from database (admin user ${session.user_id})`);
+    }
     console.log(`   Cookies: ${cookies.length}`);
     console.log(`   User-Agent: ${session.user_agent ? session.user_agent.substring(0, 50) + '...' : 'N/A'}`);
 
@@ -183,12 +208,10 @@ const loadSessionFromDb = async (userId) => {
  * @param {number} userId - Optional user ID to load session for specific user (database)
  */
 const loadSession = async (userId = null) => {
-  // If userId provided, try database first
-  if (userId) {
-    const dbSession = await loadSessionFromDb(userId);
-    if (dbSession) {
-      return dbSession;
-    }
+  // Always try database first (with or without userId)
+  const dbSession = await loadSessionFromDb(userId);
+  if (dbSession) {
+    return dbSession;
   }
 
   // Fallback to file-based session (for backward compatibility / local dev)
