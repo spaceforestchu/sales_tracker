@@ -2433,14 +2433,13 @@ const JobPostings = () => {
                   {/* Two-column layout for Experience Level and Salary Range */}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                     <div className="form-section">
-                      <label className="form-label">Experience Level *</label>
+                      <label className="form-label">Experience Level</label>
                       <select
-                        required
                         value={newJobPostingForm.experience_level}
                         onChange={(e) => setNewJobPostingForm({...newJobPostingForm, experience_level: e.target.value})}
                         className="form-select"
                       >
-                        <option value="">Select Level</option>
+                        <option value="">Select Level (optional)</option>
                         {experienceLevels.map(level => (
                           <option key={level} value={level}>{level}</option>
                         ))}
@@ -2478,10 +2477,9 @@ const JobPostings = () => {
                     </div>
 
                     <div className="form-section">
-                      <label className="form-label">Aligned Sectors *</label>
-                      <p className="form-help-text">Auto-filled from job URL or select manually</p>
+                      <label className="form-label">Aligned Sectors</label>
+                      <p className="form-help-text">Auto-filled from job URL or select manually (optional)</p>
                       <select
-                        required
                         value={Array.isArray(newJobPostingForm.aligned_sector) ? (newJobPostingForm.aligned_sector[0] || '') : newJobPostingForm.aligned_sector}
                         onChange={(e) => {
                           setNewJobPostingForm({...newJobPostingForm, aligned_sector: [e.target.value]});

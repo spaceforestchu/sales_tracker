@@ -1555,10 +1555,9 @@ const AllLeads = () => {
                         </div>
 
                         <div className="form-section">
-                          <label className="form-label">Source *</label>
-                          <p className="form-help-text">Select where this lead came from</p>
+                          <label className="form-label">Source</label>
+                          <p className="form-help-text">Select where this lead came from (optional)</p>
                           <select
-                            required
                             value={Array.isArray(newLeadForm.source) ? (newLeadForm.source[0] || '') : newLeadForm.source}
                             onChange={(e) => {
                               setNewLeadForm({...newLeadForm, source: [e.target.value]});
@@ -1610,10 +1609,9 @@ const AllLeads = () => {
 
                     {/* Aligned Sectors */}
                     <div className="form-section">
-                      <label className="form-label">Aligned Sectors *</label>
-                      <p className="form-help-text">Select a sector</p>
+                      <label className="form-label">Aligned Sectors</label>
+                      <p className="form-help-text">Select a sector (optional)</p>
                       <select
-                        required
                         value={Array.isArray(newLeadForm.aligned_sector) ? (newLeadForm.aligned_sector[0] || '') : newLeadForm.aligned_sector}
                         onChange={(e) => {
                           setNewLeadForm({...newLeadForm, aligned_sector: [e.target.value]});

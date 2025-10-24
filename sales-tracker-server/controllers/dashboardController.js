@@ -3,9 +3,10 @@ const pool = require('../db/dbConfig');
 // Get dashboard statistics
 const getDashboardStats = async (req, res) => {
   try {
-    // Total job postings
+    // Total Closed Won jobs (from outreach records)
     const totalJobsResult = await pool.query(
-      'SELECT COUNT(*) as count FROM job_postings'
+      `SELECT COUNT(*) as count FROM outreach
+       WHERE status = 'Closed Won'`
     );
     const totalJobs = parseInt(totalJobsResult.rows[0].count);
 
@@ -29,12 +30,18 @@ const getDashboardStats = async (req, res) => {
     );
     const activeLeads = parseInt(activeLeadsResult.rows[0].count);
 
+    // Job Postings count (from job_postings table)
+    const jobPostingsResult = await pool.query(
+      'SELECT COUNT(*) as count FROM job_postings'
+    );
+    const jobPostings = parseInt(jobPostingsResult.rows[0].count);
+
     res.json({
       totalJobs,
       totalOutreach,
       last7DaysOutreach,
       activeLeads,
-      jobPostings: totalJobs // Same as totalJobs for now
+      jobPostings
     });
   } catch (error) {
     console.error('Get dashboard stats error:', error);

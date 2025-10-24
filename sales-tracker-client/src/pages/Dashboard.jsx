@@ -241,7 +241,7 @@ const Dashboard = () => {
       {/* Stats Cards */}
       <div className="dashboard__stats">
         <div className="stat-card">
-          <div className="stat-card__label">Total Jobs</div>
+          <div className="stat-card__label">Jobs Won</div>
           <div className="stat-card__value">{stats.totalJobs}</div>
         </div>
 
