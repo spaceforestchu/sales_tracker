@@ -28,6 +28,9 @@ const Dashboard = () => {
   const [closedWonDateRange, setClosedWonDateRange] = useState({ start: '', end: '' });
   const [outreachDateRange, setOutreachDateRange] = useState({ start: '', end: '' });
 
+  // State for stage filter
+  const [stageFilter, setStageFilter] = useState('');
+
   // State for sorting
   const [closedWonSort, setClosedWonSort] = useState({ column: null, direction: 'asc' });
   const [outreachSort, setOutreachSort] = useState({ column: null, direction: 'asc' });
@@ -186,9 +189,12 @@ const Dashboard = () => {
     return sortConfig.direction === 'asc' ? '↑' : '↓';
   };
 
-  // Apply sorting to data
+  // Apply sorting and filtering to data
   const sortedClosedWonJobs = sortData(closedWonJobs, closedWonSort);
-  const sortedOutreachData = sortData(outreachData, outreachSort);
+  const filteredOutreachData = stageFilter
+    ? outreachData.filter(outreach => outreach.stage === stageFilter)
+    : outreachData;
+  const sortedOutreachData = sortData(filteredOutreachData, outreachSort);
 
   if (loading) {
     return (
@@ -354,6 +360,19 @@ const Dashboard = () => {
         <div className="dashboard__section-header">
           <h3>Outreach</h3>
           <div className="dashboard__date-filter">
+            <label>Stage:</label>
+            <select
+              value={stageFilter}
+              onChange={(e) => setStageFilter(e.target.value)}
+              style={{ padding: '6px 10px', borderRadius: '4px', border: '1px solid #ddd', marginRight: '10px' }}
+            >
+              <option value="">All Stages</option>
+              <option value="Initial Outreach">Initial Outreach</option>
+              <option value="Active Lead">Active Lead</option>
+              <option value="Not Interested">Not Interested</option>
+              <option value="Close Won">Close Won</option>
+              <option value="Close Loss">Close Loss</option>
+            </select>
             <label>From:</label>
             <input
               type="date"
@@ -366,12 +385,15 @@ const Dashboard = () => {
               value={outreachDateRange.end}
               onChange={(e) => setOutreachDateRange({ ...outreachDateRange, end: e.target.value })}
             />
-            {(outreachDateRange.start || outreachDateRange.end) && (
+            {(outreachDateRange.start || outreachDateRange.end || stageFilter) && (
               <button
                 className="btn btn--small"
-                onClick={() => setOutreachDateRange({ start: '', end: '' })}
+                onClick={() => {
+                  setOutreachDateRange({ start: '', end: '' });
+                  setStageFilter('');
+                }}
               >
-                Clear
+                Clear All
               </button>
             )}
           </div>
@@ -411,7 +433,6 @@ const Dashboard = () => {
               ) : (
                 sortedOutreachData.map((outreach) => {
                   const { date, daysAgo } = formatDate(outreach.date_of_initial_outreach);
-                  const displayStatus = formatStatus(outreach.status);
                   return (
                     <tr key={outreach.id}>
                       <td>{outreach.staff_member}</td>
@@ -423,8 +444,8 @@ const Dashboard = () => {
                         <div style={{ fontSize: '12px', color: '#666' }}>{daysAgo}</div>
                       </td>
                       <td>
-                        <span className={`status-badge status-badge--${displayStatus.toLowerCase().replace(/\s+/g, '-')}`}>
-                          {displayStatus}
+                        <span className={`status-badge status-badge--${(outreach.stage || '').toLowerCase().replace(/\s+/g, '-')}`}>
+                          {outreach.stage}
                         </span>
                       </td>
                     </tr>

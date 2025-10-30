@@ -23,10 +23,10 @@ const getDashboardStats = async (req, res) => {
     );
     const last7DaysOutreach = parseInt(last7DaysOutreachResult.rows[0].count);
 
-    // Active leads (NOT "Closed Won" or "Closed Lost")
+    // Active leads (stage = 'Active Lead')
     const activeLeadsResult = await pool.query(
       `SELECT COUNT(*) as count FROM outreach
-       WHERE status NOT IN ('Closed Won', 'Closed Lost')`
+       WHERE stage = 'Active Lead'`
     );
     const activeLeads = parseInt(activeLeadsResult.rows[0].count);
 
@@ -106,6 +106,7 @@ const getOutreachForDashboard = async (req, res) => {
         o.job_title as role,
         o.aligned_sector,
         o.outreach_date as date_of_initial_outreach,
+        o.stage,
         o.status,
         o.created_at,
         o.updated_at
