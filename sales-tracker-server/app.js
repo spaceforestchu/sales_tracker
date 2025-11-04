@@ -64,6 +64,8 @@ const linkedinAuthRoutes = require('./routes/linkedinAuthRoutes');
 console.log('✓ linkedinAuthRoutes loaded');
 const dashboardRoutes = require('./routes/dashboardRoutes');
 console.log('✓ dashboardRoutes loaded');
+const passwordResetRoutes = require('./routes/passwordResetRoutes');
+console.log('✓ passwordResetRoutes loaded');
 
 // API endpoints
 app.use('/api/auth', authRoutes);
@@ -76,6 +78,7 @@ app.use('/api/activities', activityRoutes);
 app.use('/api/applications', jobPostingBuilderRoutes);
 app.use('/api/linkedin-auth', linkedinAuthRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/password-reset', passwordResetRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

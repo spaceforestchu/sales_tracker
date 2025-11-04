@@ -193,6 +193,24 @@ export const activityAPI = {
   getActivityStats: () => apiRequest('/api/activities/stats'),
 };
 
+// Password Reset API calls
+export const forgotPasswordAPI = {
+  requestReset: (email) =>
+    apiRequest('/api/password-reset/request', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    }),
+
+  resetPassword: (token, newPassword) =>
+    apiRequest('/api/password-reset/reset', {
+      method: 'POST',
+      body: JSON.stringify({ token, newPassword }),
+    }),
+
+  validateToken: (token) =>
+    apiRequest(`/api/password-reset/validate/${token}`),
+};
+
 // Application API calls (job posting <-> builder relationships)
 export const applicationAPI = {
   getApplicationsByJobPosting: (jobPostingId) =>
@@ -230,5 +248,6 @@ export default {
   builders: builderAPI,
   activities: activityAPI,
   applications: applicationAPI,
+  forgotPassword: forgotPasswordAPI,
 };
 

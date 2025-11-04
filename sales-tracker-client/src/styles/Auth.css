@@ -111,9 +111,29 @@
   cursor: not-allowed;
 }
 
+.auth__links {
+  text-align: center;
+  margin-top: 20px;
+}
+
+.auth__link--forgot {
+  display: inline-block;
+  font-size: 14px;
+  color: #667eea;
+  text-decoration: none;
+  transition: color 0.3s;
+}
+
+.auth__link--forgot:hover {
+  color: #764ba2;
+  text-decoration: underline;
+}
+
 .auth__footer {
   text-align: center;
   margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #e1e4e8;
   color: #666;
   font-size: 14px;
 }

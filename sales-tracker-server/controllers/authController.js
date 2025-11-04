@@ -51,7 +51,7 @@ const register = async (req, res) => {
         role: newUser.role 
       },
       process.env.SECRET,
-      { expiresIn: '7d' }
+      { expiresIn: '365d' } // 1 year expiration for internal use
     );
 
     res.status(201).json({
@@ -105,7 +105,7 @@ const login = async (req, res) => {
         role: user.role 
       },
       process.env.SECRET,
-      { expiresIn: '7d' }
+      { expiresIn: '365d' } // 1 year expiration for internal use
     );
 
     res.json({
