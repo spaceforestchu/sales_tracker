@@ -116,23 +116,31 @@ const Dashboard = () => {
   const formatDate = (dateString) => {
     if (!dateString) return { date: '', daysAgo: '' };
 
-    const date = new Date(dateString);
+    // Parse date in local timezone to avoid UTC conversion issues
+    const [year, month, day] = dateString.split('-');
+    const date = new Date(year, month - 1, day);
+
     const formatted = date.toLocaleDateString('en-US', {
       month: '2-digit',
       day: '2-digit',
       year: 'numeric'
     });
 
-    // Calculate days ago
+    // Calculate days ago using local dates only (no time component)
     const now = new Date();
-    const diffTime = Math.abs(now - date);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const targetDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const diffDays = Math.round((today - targetDate) / (1000 * 60 * 60 * 24));
 
     let daysAgo = '';
     if (diffDays === 0) {
       daysAgo = 'today';
     } else if (diffDays === 1) {
       daysAgo = '1 day ago';
+    } else if (diffDays === -1) {
+      daysAgo = '1 day from now';
+    } else if (diffDays < 0) {
+      daysAgo = `${Math.abs(diffDays)} days from now`;
     } else {
       daysAgo = `${diffDays} days ago`;
     }
