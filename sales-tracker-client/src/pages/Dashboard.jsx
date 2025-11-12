@@ -118,19 +118,33 @@ const Dashboard = () => {
       return { date: '', daysAgo: '' };
     }
 
-    // Simple parsing: just use the date string directly with proper timezone handling
-    // For 'YYYY-MM-DD' format, append 'T00:00:00' to treat as local timezone
-    let dateToFormat = dateString;
-    if (typeof dateString === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
-      // It's a YYYY-MM-DD format, append time to keep it in local timezone
-      dateToFormat = dateString + 'T12:00:00'; // Use noon to avoid DST issues
+    // Parse YYYY-MM-DD format manually to avoid ALL timezone issues
+    let year, month, day;
+
+    if (typeof dateString === 'string' && /^\d{4}-\d{2}-\d{2}/.test(dateString)) {
+      // Extract date parts from YYYY-MM-DD format
+      const dateParts = dateString.split('T')[0].split('-');
+      year = parseInt(dateParts[0], 10);
+      month = parseInt(dateParts[1], 10) - 1; // Month is 0-indexed
+      day = parseInt(dateParts[2], 10);
+    } else {
+      // Fallback for other formats
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        console.error('Failed to parse date:', dateString);
+        return { date: dateString, daysAgo: '' };
+      }
+      year = date.getFullYear();
+      month = date.getMonth();
+      day = date.getDate();
     }
 
-    const date = new Date(dateToFormat);
+    // Create date in local timezone
+    const date = new Date(year, month, day);
 
     // Validate the date
     if (isNaN(date.getTime())) {
-      console.error('Failed to parse date:', dateString, 'Type:', typeof dateString);
+      console.error('Invalid date components:', year, month, day);
       return { date: dateString, daysAgo: '' };
     }
 
@@ -143,7 +157,7 @@ const Dashboard = () => {
     // Calculate days ago using date-only comparison
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const targetDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const targetDate = new Date(year, month, day);
     const diffDays = Math.round((today - targetDate) / (1000 * 60 * 60 * 24));
 
     let daysAgo = '';
