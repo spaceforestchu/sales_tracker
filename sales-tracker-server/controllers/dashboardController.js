@@ -143,22 +143,48 @@ const getOutreachForDashboard = async (req, res) => {
 const getLeaderboard = async (req, res) => {
   try {
     const { days = 7 } = req.query;
+    const daysInt = parseInt(days);
 
-    const query = `
-      SELECT
-        u.id,
-        u.name,
-        u.email,
-        u.role,
-        COUNT(o.id) as outreach_count
-      FROM users u
-      LEFT JOIN outreach o
-        ON u.id = o.staff_user_id
-        AND o.outreach_date >= CURRENT_DATE - INTERVAL '${parseInt(days)} days'
-      WHERE u.is_active = true
-      GROUP BY u.id, u.name, u.email, u.role
-      ORDER BY outreach_count DESC, u.name ASC
-    `;
+    // Build query based on whether it's all-time or time-limited
+    let query;
+    let period;
+
+    if (daysInt === 0) {
+      // All time query - no date filter
+      query = `
+        SELECT
+          u.id,
+          u.name,
+          u.email,
+          u.role,
+          COUNT(o.id) as outreach_count
+        FROM users u
+        LEFT JOIN outreach o
+          ON u.id = o.staff_user_id
+        WHERE u.is_active = true
+        GROUP BY u.id, u.name, u.email, u.role
+        ORDER BY outreach_count DESC, u.name ASC
+      `;
+      period = 'All Time';
+    } else {
+      // Time-limited query
+      query = `
+        SELECT
+          u.id,
+          u.name,
+          u.email,
+          u.role,
+          COUNT(o.id) as outreach_count
+        FROM users u
+        LEFT JOIN outreach o
+          ON u.id = o.staff_user_id
+          AND o.outreach_date >= CURRENT_DATE - INTERVAL '${daysInt} days'
+        WHERE u.is_active = true
+        GROUP BY u.id, u.name, u.email, u.role
+        ORDER BY outreach_count DESC, u.name ASC
+      `;
+      period = `Last ${daysInt} days`;
+    }
 
     const result = await pool.query(query);
 
@@ -174,7 +200,7 @@ const getLeaderboard = async (req, res) => {
 
     res.json({
       leaderboard,
-      period: `Last ${days} days`,
+      period,
       total_users: leaderboard.length
     });
   } catch (error) {

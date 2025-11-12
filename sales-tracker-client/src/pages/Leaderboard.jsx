@@ -100,6 +100,7 @@ const Leaderboard = () => {
                 <option value="14">Last 14 Days</option>
                 <option value="30">Last 30 Days</option>
                 <option value="90">Last 90 Days</option>
+                <option value="0">All Time</option>
               </select>
             </div>
           </div>
