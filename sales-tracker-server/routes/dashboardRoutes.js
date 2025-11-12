@@ -15,4 +15,7 @@ router.get('/closed-won', dashboardController.getClosedWonJobs);
 // GET /api/dashboard/outreach - Get outreach for dashboard
 router.get('/outreach', dashboardController.getOutreachForDashboard);
 
+// GET /api/dashboard/leaderboard - Get staff leaderboard
+router.get('/leaderboard', dashboardController.getLeaderboard);
+
 module.exports = router;

@@ -240,6 +240,12 @@ const Dashboard = () => {
         >
           Job Postings
         </button>
+        <button
+          className="overview__nav-item"
+          onClick={() => navigate('/leaderboard')}
+        >
+          Leaderboard
+        </button>
       </nav>
 
       <main className="overview__main">

@@ -211,6 +211,23 @@ export const forgotPasswordAPI = {
     apiRequest(`/api/password-reset/validate/${token}`),
 };
 
+// Dashboard API calls
+export const dashboardAPI = {
+  getStats: () => apiRequest('/api/dashboard/stats'),
+
+  getClosedWonJobs: (filters = {}) => {
+    const params = new URLSearchParams(filters);
+    return apiRequest(`/api/dashboard/closed-won?${params}`);
+  },
+
+  getOutreach: (filters = {}) => {
+    const params = new URLSearchParams(filters);
+    return apiRequest(`/api/dashboard/outreach?${params}`);
+  },
+
+  getLeaderboard: (days = 7) => apiRequest(`/api/dashboard/leaderboard?days=${days}`),
+};
+
 // Application API calls (job posting <-> builder relationships)
 export const applicationAPI = {
   getApplicationsByJobPosting: (jobPostingId) =>
@@ -249,5 +266,6 @@ export default {
   activities: activityAPI,
   applications: applicationAPI,
   forgotPassword: forgotPasswordAPI,
+  dashboard: dashboardAPI,
 };
 

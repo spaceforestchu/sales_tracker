@@ -1,0 +1,363 @@
+/* Leaderboard Page Styles */
+
+.leaderboard {
+  min-height: 100vh;
+  background-color: #f5f7fa;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header */
+.leaderboard__header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 1.5rem 2rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.leaderboard__header-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.leaderboard__title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.leaderboard__user {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.leaderboard__user-name {
+  font-weight: 500;
+}
+
+.leaderboard__button--logout {
+  background-color: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: background-color 0.2s;
+}
+
+.leaderboard__button--logout:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Navigation */
+.leaderboard__nav {
+  background-color: white;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 0;
+  display: flex;
+  gap: 0;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.leaderboard__nav-item {
+  background: none;
+  border: none;
+  padding: 1rem 2rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #64748b;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.leaderboard__nav-item:hover {
+  color: #667eea;
+  background-color: #f8fafc;
+}
+
+.leaderboard__nav-item--active {
+  color: #667eea;
+  border-bottom-color: #667eea;
+}
+
+/* Main Content */
+.leaderboard__main {
+  flex: 1;
+  padding: 2rem;
+}
+
+.leaderboard__content {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.leaderboard__section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.leaderboard__section-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+}
+
+.leaderboard__section-subtitle {
+  font-size: 0.95rem;
+  color: #64748b;
+  margin: 0.5rem 0 0 0;
+}
+
+/* Filters */
+.leaderboard__filters {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.leaderboard__filter-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #475569;
+}
+
+.leaderboard__filter-select {
+  padding: 0.5rem 1rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  color: #1e293b;
+  background-color: white;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.leaderboard__filter-select:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+/* Loading State */
+.leaderboard__loading {
+  text-align: center;
+  padding: 3rem;
+  color: #64748b;
+  font-size: 1rem;
+}
+
+/* Table */
+.leaderboard__table-container {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.leaderboard__table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.leaderboard__table-head {
+  background-color: #f8fafc;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.leaderboard__table-header {
+  padding: 1rem;
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.leaderboard__table-header--name {
+  width: 50%;
+}
+
+.leaderboard__table-header--count {
+  width: 40%;
+}
+
+.leaderboard__table-body {
+}
+
+.leaderboard__table-row {
+  border-bottom: 1px solid #f1f5f9;
+  transition: background-color 0.2s;
+}
+
+.leaderboard__table-row:hover {
+  background-color: #f8fafc;
+}
+
+.leaderboard__table-row--top {
+  background-color: #fefce8;
+}
+
+.leaderboard__table-row--top:hover {
+  background-color: #fef9c3;
+}
+
+.leaderboard__table-row--current-user {
+  background-color: #eff6ff;
+  border-left: 4px solid #667eea;
+}
+
+.leaderboard__table-row--current-user:hover {
+  background-color: #dbeafe;
+}
+
+.leaderboard__table-cell {
+  padding: 1.25rem 1rem;
+  font-size: 0.95rem;
+  color: #1e293b;
+}
+
+.leaderboard__table-cell--rank {
+  width: 80px;
+  text-align: center;
+}
+
+/* Rank & Medals */
+.leaderboard__rank-number {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.leaderboard__medal {
+  display: block;
+  margin: 0 auto;
+}
+
+.leaderboard__medal--gold {
+  stroke: #fbbf24;
+  fill: #fef3c7;
+}
+
+.leaderboard__medal--silver {
+  stroke: #94a3b8;
+  fill: #f1f5f9;
+}
+
+.leaderboard__medal--bronze {
+  stroke: #d97706;
+  fill: #fed7aa;
+}
+
+/* Staff Info */
+.leaderboard__staff-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.leaderboard__staff-name {
+  font-weight: 500;
+  font-size: 1rem;
+}
+
+.leaderboard__badge {
+  background-color: #667eea;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+/* Count Display */
+.leaderboard__count-container {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.leaderboard__count-number {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1e293b;
+  min-width: 40px;
+}
+
+.leaderboard__count-bar-container {
+  flex: 1;
+  height: 8px;
+  background-color: #e2e8f0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.leaderboard__count-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .leaderboard__header {
+    padding: 1rem;
+  }
+
+  .leaderboard__title {
+    font-size: 1.25rem;
+  }
+
+  .leaderboard__nav-item {
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+  }
+
+  .leaderboard__main {
+    padding: 1rem;
+  }
+
+  .leaderboard__section-title {
+    font-size: 1.5rem;
+  }
+
+  .leaderboard__section-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .leaderboard__table-header,
+  .leaderboard__table-cell {
+    padding: 0.75rem 0.5rem;
+    font-size: 0.875rem;
+  }
+
+  .leaderboard__staff-name {
+    font-size: 0.875rem;
+  }
+
+  .leaderboard__count-number {
+    font-size: 1rem;
+  }
+
+  .leaderboard__count-bar-container {
+    display: none;
+  }
+}

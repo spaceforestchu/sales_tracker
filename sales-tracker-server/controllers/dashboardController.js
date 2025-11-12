@@ -139,8 +139,53 @@ const getOutreachForDashboard = async (req, res) => {
   }
 };
 
+// Get leaderboard - all users ranked by outreach count in last 7 days
+const getLeaderboard = async (req, res) => {
+  try {
+    const { days = 7 } = req.query;
+
+    const query = `
+      SELECT
+        u.id,
+        u.name,
+        u.email,
+        u.role,
+        COUNT(o.id) as outreach_count
+      FROM users u
+      LEFT JOIN outreach o
+        ON u.id = o.staff_user_id
+        AND o.outreach_date >= CURRENT_DATE - INTERVAL '${parseInt(days)} days'
+      WHERE u.is_active = true
+      GROUP BY u.id, u.name, u.email, u.role
+      ORDER BY outreach_count DESC, u.name ASC
+    `;
+
+    const result = await pool.query(query);
+
+    // Add rank to each user
+    const leaderboard = result.rows.map((user, index) => ({
+      rank: index + 1,
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      outreach_count: parseInt(user.outreach_count)
+    }));
+
+    res.json({
+      leaderboard,
+      period: `Last ${days} days`,
+      total_users: leaderboard.length
+    });
+  } catch (error) {
+    console.error('Get leaderboard error:', error);
+    res.status(500).json({ error: 'Error fetching leaderboard data' });
+  }
+};
+
 module.exports = {
   getDashboardStats,
   getClosedWonJobs,
-  getOutreachForDashboard
+  getOutreachForDashboard,
+  getLeaderboard
 };

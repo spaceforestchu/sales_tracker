@@ -8,6 +8,7 @@ import ResetPassword from './pages/ResetPassword';
 import Overview from './pages/Overview';
 import AllLeads from './pages/AllLeads';
 import JobPostings from './pages/JobPostings';
+import Leaderboard from './pages/Leaderboard';
 import Builders from './pages/Builders';
 import ActivityFeed from './pages/ActivityFeed';
 import QuickActions from './pages/QuickActions';
@@ -47,6 +48,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <JobPostings />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/leaderboard"
+            element={
+              <ProtectedRoute>
+                <Leaderboard />
               </ProtectedRoute>
             }
           />
