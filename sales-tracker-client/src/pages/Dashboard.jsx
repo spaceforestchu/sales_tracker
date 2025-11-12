@@ -114,11 +114,25 @@ const Dashboard = () => {
   };
 
   const formatDate = (dateString) => {
-    if (!dateString) return { date: '', daysAgo: '' };
+    if (!dateString || dateString === 'null' || dateString === 'undefined') {
+      return { date: '', daysAgo: '' };
+    }
 
-    // Parse date in local timezone to avoid UTC conversion issues
-    const [year, month, day] = dateString.split('-');
-    const date = new Date(year, month - 1, day);
+    // Simple parsing: just use the date string directly with proper timezone handling
+    // For 'YYYY-MM-DD' format, append 'T00:00:00' to treat as local timezone
+    let dateToFormat = dateString;
+    if (typeof dateString === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+      // It's a YYYY-MM-DD format, append time to keep it in local timezone
+      dateToFormat = dateString + 'T12:00:00'; // Use noon to avoid DST issues
+    }
+
+    const date = new Date(dateToFormat);
+
+    // Validate the date
+    if (isNaN(date.getTime())) {
+      console.error('Failed to parse date:', dateString, 'Type:', typeof dateString);
+      return { date: dateString, daysAgo: '' };
+    }
 
     const formatted = date.toLocaleDateString('en-US', {
       month: '2-digit',
@@ -126,7 +140,7 @@ const Dashboard = () => {
       year: 'numeric'
     });
 
-    // Calculate days ago using local dates only (no time component)
+    // Calculate days ago using date-only comparison
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const targetDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
