@@ -188,15 +188,42 @@ const getLeaderboard = async (req, res) => {
 
     const result = await pool.query(query);
 
-    // Add rank to each user
-    const leaderboard = result.rows.map((user, index) => ({
-      rank: index + 1,
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      outreach_count: parseInt(user.outreach_count)
-    }));
+    // Check if everyone has the same outreach count
+    const counts = result.rows.map(user => parseInt(user.outreach_count));
+    const allSameCount = counts.length > 0 && counts.every(count => count === counts[0]);
+
+    // Add rank to each user with proper tie handling
+    let currentRank = 1;
+    const leaderboard = result.rows.map((user, index) => {
+      // If everyone has the same count, everyone gets rank 1 (gold)
+      if (allSameCount) {
+        return {
+          rank: 1,
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          outreach_count: parseInt(user.outreach_count)
+        };
+      }
+
+      // Handle ties: if current user has same count as previous, use same rank
+      if (index > 0 && parseInt(user.outreach_count) === parseInt(result.rows[index - 1].outreach_count)) {
+        // Same count as previous user, keep the same rank
+      } else {
+        // Different count, update rank to current position
+        currentRank = index + 1;
+      }
+
+      return {
+        rank: currentRank,
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        outreach_count: parseInt(user.outreach_count)
+      };
+    });
 
     res.json({
       leaderboard,
