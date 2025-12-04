@@ -45,7 +45,7 @@ const Leaderboard = () => {
     <div className="overview">
       <header className="overview__header">
         <div className="overview__header-content">
-          <h1 className="overview__title">Pursuit, Talent & Partnership Tracker</h1>
+          <h1 className="overview__title">Pursuit Outreach Tracker</h1>
           <div className="overview__user">
             <span className="overview__user-name">{user?.name}</span>
             <button
